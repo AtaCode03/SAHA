@@ -1,0 +1,17 @@
+import {useEffect,useState} from 'react';
+import {api} from './api';
+type Option={id:string,name:string};
+const plain=(s:string)=>s.replace(/ — Demo veri$/, '');
+export function FieldAddress({value,onChange}:{value:{province:string,district:string,neighborhood:string},onChange:(v:{province:string,district:string,neighborhood:string})=>void}){
+ const [provinces,P]=useState<Option[]>([]),[districts,D]=useState<Option[]>([]),[neighborhoods,N]=useState<Option[]>([]),[mode,M]=useState(''),[localTest,LT]=useState(false),[error,E]=useState(''),[busy,B]=useState(''),[retry,R]=useState(0);
+ const province=provinces.find(p=>plain(p.name)===value.province),district=districts.find(p=>plain(p.name)===value.district);
+ useEffect(()=>{let active=true;B('province');E('');Promise.all([api('/parcels/provinces'),api('/parcels/status')]).then(([r,status])=>{if(active){P(r.data);M(r.source);LT(Boolean(status.localDevelopmentTest));}}).catch(e=>{if(active)E(e.message);}).finally(()=>{if(active)B('');});return()=>{active=false;};},[retry]);
+ useEffect(()=>{let active=true;D([]);N([]);if(!province)return;B('district');E('');api('/parcels/districts?provinceId='+encodeURIComponent(province.id)).then(r=>{if(active)D(r.data);}).catch(e=>{if(active)E(e.message);}).finally(()=>{if(active)B('');});return()=>{active=false;};},[province?.id,retry]);
+ useEffect(()=>{let active=true;N([]);if(!district)return;B('neighborhood');E('');api('/parcels/neighborhoods?districtId='+encodeURIComponent(district.id)).then(r=>{if(active)N(r.data);}).catch(e=>{if(active)E(e.message);}).finally(()=>{if(active)B('');});return()=>{active=false;};},[district?.id,retry]);
+ const options=(list:Option[],current:string)=> <>{current&&!list.some(p=>plain(p.name)===current)&&<option value={current}>{current} (mevcut kayıt)</option>}{list.map(p=><option key={p.id} value={plain(p.name)}>{p.name}</option>)}</>;
+ return <><div className="wide hint">{localTest?'Yerel geliştirme testi · TKGM canlı adres/parsel bağlantısı. Resmî kullanım yetkisi doğrulanmadı.':mode==='REAL'?'TKGM adres kataloğu · İl → ilçe → mahalle seçin.':mode==='DEMO'?'Demo idari katalog: yalnız Konya/Seydişehir ve Ankara/Çankaya. Gerçek ulusal katalog bağlı değil.':'Türkiye adres kataloğu · İl → ilçe → mahalle/köy seçin. Kaynak: TürkiyeAPI (2025); parsel sınırı verisi değildir.'}</div>
+ <label>İl<select required value={value.province} disabled={busy==='province'} onChange={e=>onChange({province:e.target.value,district:'',neighborhood:''})}><option value="">{busy==='province'?'İller yükleniyor…':'İl seçin'}</option>{options(provinces,value.province)}</select></label>
+ <label>İlçe<select required value={value.district} disabled={!province||busy==='district'} onChange={e=>onChange({...value,district:e.target.value,neighborhood:''})}><option value="">{busy==='district'?'İlçeler yükleniyor…':!province?'Önce il seçin':'İlçe seçin'}</option>{options(districts,value.district)}</select></label>
+ <label>Mahalle / köy<select required value={value.neighborhood} disabled={!district||busy==='neighborhood'} onChange={e=>onChange({...value,neighborhood:e.target.value})}><option value="">{busy==='neighborhood'?'Mahalleler yükleniyor…':!district?'Önce ilçe seçin':'Mahalle / köy seçin'}</option>{options(neighborhoods,value.neighborhood)}</select></label>
+ {error&&<div className="error wide" role="alert">Listeler yüklenemedi: {error}<button type="button" className="secondary" onClick={()=>R(retry+1)}>Tekrar dene</button></div>}</>;
+}

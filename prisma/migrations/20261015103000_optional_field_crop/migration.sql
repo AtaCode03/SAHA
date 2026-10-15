@@ -1,0 +1,1 @@
+ALTER TABLE "fields" ALTER COLUMN "crop" DROP NOT NULL;

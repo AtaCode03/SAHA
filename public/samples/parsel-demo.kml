@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>DEMO — sentetik geometri; gerçek taşınmaz değildir</name><Placemark><name>Demo parsel</name><Polygon><outerBoundaryIs><LinearRing><coordinates>31.845,37.415,0 31.847,37.4153,0 31.8473,37.4165,0 31.8455,37.4168,0 31.845,37.415,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>
