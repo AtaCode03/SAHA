@@ -45,6 +45,11 @@ model User {
   passwordHash String
   role Role
   active Boolean @default(true)
+  weatherForecasts WeatherForecast[]
+  planningProfiles PlanningProfile[]
+  dailyPlans DailyPlan[]
+  travelMatrices TravelMatrix[]
+  travelRoutes TravelRoute[]
   sessions Session[]
   assignments WorkOrder[]
   events OperationEvent[]
@@ -96,9 +101,12 @@ model Field {
   longitude Float?
   boundary Json?
   accessNotes String?
+  roadAccess Json?
   active Boolean @default(true)
   source Source @default(REAL)
+  weatherForecasts WeatherForecast[]
   orders WorkOrder[]
+  appointments AppointmentRequest[]
   @@index([customerId,active])
   @@map("fields")
 }
@@ -109,6 +117,7 @@ model Drone {
   tankLiters Decimal? @db.Decimal(10,3)
   active Boolean @default(true)
   orders WorkOrder[]
+  planningProfiles PlanningProfile[]
   @@map("drones")
 }
 model WorkOrder {
@@ -142,10 +151,101 @@ model WorkOrder {
   expenses Expense[]
   payments Payment[]
   predictions PredictionSnapshot[]
+  appointment AppointmentRequest?
   @@index([operatorId,status,plannedStart])
   @@index([droneId,plannedStart])
   @@index([status,completedAt])
   @@map("work_orders")
+}
+
+model PlanningProfile {
+ id String @id @default(uuid())
+ name String
+ operatorId String
+ operator User @relation(fields:[operatorId],references:[id],onDelete:Restrict)
+ droneId String
+ drone Drone @relation(fields:[droneId],references:[id],onDelete:Restrict)
+ service String
+ preparationMinutes Decimal @db.Decimal(10,3)
+ minutesPerDekar Decimal @db.Decimal(10,3)
+ closingMinutes Decimal @db.Decimal(10,3)
+ coefficientSource String
+ weatherPolicy Json?
+ shiftStart String
+ shiftEnd String
+ baseName String
+ baseLocation Json?
+ travelMatrices TravelMatrix[]
+ travelRoutes TravelRoute[]
+ active Boolean @default(true)
+ version Int @default(1)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ @@map("planning_profiles")
+}
+
+model AppointmentRequest {
+ pricingSnapshot Json?
+ id String @id @default(uuid())
+ fieldId String
+ field Field @relation(fields:[fieldId],references:[id],onDelete:Restrict)
+ service String
+ requestedDay String
+ earliestDay String
+ latestDay String
+ windows Json
+ scope String @default("FULL_PARCEL")
+ agreedPrice Decimal @db.Decimal(14,2)
+ status String @default("PENDING")
+ revision Int @default(1)
+ orderId String? @unique
+ order WorkOrder? @relation(fields:[orderId],references:[id],onDelete:Restrict)
+ source Source @default(REAL)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ @@index([status,earliestDay,latestDay])
+ @@index([fieldId])
+ @@map("appointment_requests")
+}
+
+model DailyPlan {
+ id String @id @default(uuid())
+ day String
+ createdById String
+ createdBy User @relation(fields:[createdById],references:[id],onDelete:Restrict)
+ input Json
+ result Json
+ status String @default("DRAFT")
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ approvedAt DateTime? @db.Timestamptz(3)
+ travelRoutes TravelRoute[]
+ @@index([day,status])
+ @@map("daily_plans")
+}
+model TravelMatrix {
+ id String @id @default(uuid())
+ profileId String
+ profile PlanningProfile @relation(fields:[profileId],references:[id],onDelete:Restrict)
+ createdById String
+ createdBy User @relation(fields:[createdById],references:[id],onDelete:Restrict)
+ inputHash String
+ input Json
+ payload Json
+ retrievedAt DateTime @db.Timestamptz(3)
+ expiresAt DateTime @db.Timestamptz(3)
+ @@index([profileId,inputHash,retrievedAt])
+ @@map("travel_matrices")
+}
+model TravelRoute {
+ id String @id @default(uuid())
+ planId String
+ plan DailyPlan @relation(fields:[planId],references:[id],onDelete:Restrict)
+ profileId String
+ profile PlanningProfile @relation(fields:[profileId],references:[id],onDelete:Restrict)
+ createdById String
+ createdBy User @relation(fields:[createdById],references:[id],onDelete:Restrict)
+ payload Json
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ @@unique([planId,profileId])
+ @@map("travel_routes")
 }
 model OperationEvent {
   id String @id @default(uuid())
@@ -226,4 +326,37 @@ model ResearchExport {
   manifest Json
   at DateTime @default(now()) @db.Timestamptz(3)
   @@map("research_exports")
+}
+
+model WeatherForecast {
+ id String @id @default(uuid())
+ fieldId String
+ field Field @relation(fields:[fieldId],references:[id],onDelete:Restrict)
+ createdById String
+ createdBy User @relation(fields:[createdById],references:[id],onDelete:Restrict)
+ provider String
+ adapterVersion String
+ usageMode String
+ requestedDate String
+ inputHash String
+ retrievedAt DateTime @db.Timestamptz(3)
+ issuedAt DateTime? @db.Timestamptz(3)
+ validFrom DateTime @db.Timestamptz(3)
+ validTo DateTime @db.Timestamptz(3)
+ payload Json
+ @@index([fieldId,requestedDate,retrievedAt])
+ @@index([inputHash,retrievedAt])
+ @@map("weather_forecasts")
+}
+model PriceItem {
+ id String @id @default(uuid())
+ name String
+ category String
+ unit String
+ unitCost Decimal @db.Decimal(14,2)
+ active Boolean @default(true)
+ version Int @default(1)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ @@index([active,name])
+ @@map("price_items")
 }

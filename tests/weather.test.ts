@@ -1,0 +1,7 @@
+import {it,expect,vi} from 'vitest';
+import {normalizeForecast,fetchForecast,weatherStatus} from '../server/weather-provider.js';
+const epoch=Math.floor(new Date('2026-10-20T06:00:00Z').getTime()/1000);
+const fixture=(hour:any)=>({location:{lat:37.5,lon:31.8,tz_id:'Europe/Istanbul'},forecast:{forecastday:[{date:'2026-10-20',hour:[{time_epoch:epoch,...hour}]}]}});
+it('km/saat m/s dönüşümü ve eksik veri null kalır',()=>{const j=normalizeForecast(fixture({wind_kph:36,gust_kph:54,humidity:0}), '2026-10-20');expect(j.hours[0].windSpeedMs).toBe(10);expect(j.hours[0].windGustMs).toBe(15);expect(j.hours[0].temperatureC).toBeNull();expect(j.hours[0].relativeHumidityPercent).toBe(0);expect(j.issuedAt).toBeNull();expect(j.suitability).toBe('NOT_EVALUATED');});
+it('geçersiz ve ufuk dışı yanıtlar tahmin sayılmaz',()=>{expect(()=>normalizeForecast(fixture({humidity:101}),'2026-10-20')).toThrow();expect(()=>normalizeForecast(fixture({}),'2026-10-21')).toThrow();expect(()=>normalizeForecast(fixture({time_epoch:epoch-86400}),'2026-10-20')).toThrow();});
+it('anahtar yokken servis çağrılmaz, sır status içinde bulunmaz',async()=>{vi.stubEnv('WEATHERAPI_KEY','');try{await expect(fetchForecast({latitude:37.5,longitude:31.8,date:'2026-10-20'})).rejects.toMatchObject({code:'WEATHER_NOT_CONFIGURED'});vi.stubEnv('WEATHERAPI_KEY','SECRET-TEST-KEY');expect(JSON.stringify(weatherStatus())).not.toContain('SECRET-TEST-KEY');}finally{vi.unstubAllEnvs();}});

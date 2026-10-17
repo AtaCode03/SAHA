@@ -4,7 +4,15 @@ Türkçe, mobil uyumlu tek işletme uygulaması. Express/TypeScript REST API, Po
 
 ## Yerel kurulum
 
-Bu Windows bilgisayarında Docker olmadan oluşturulan kalıcı yerel kurulum için `npm run local` komutunu kullanın. Komut önce production build alır, yerel PostgreSQL'i 127.0.0.1:55440 üzerinde başlatır, migration uygular ve derlenmiş API + Vite preview'ı açar. Uygulama http://localhost:5173/ adresindedir. İlk yönetici bilgileri gitignored `.local/GIRIS_BILGILERI.md` dosyasındadır; parola rastgele oluşturulur ve sonraki çalıştırmalarda değiştirilmez. Saha/demo kayıtları eklenmez. DB dosyaları `%USERPROFILE%/AppData/Local/SahaLocal/data` altında kalır. Ctrl+C uygulamayı/veritabanını durdurur, kayıtları silmez. Bu yerel geliştirme kurulumudur; internet yayını veya üretim barındırması değildir. Mevcut farklı `.env` ilk kurulumda ezilmez.
+Bu bilgisayarda uygulamayı açmak için `npm run local` kullanın. Web arayüzü http://localhost:5173/ adresinde çalışır. Komut seçilmiş veritabanını korur:
+
+- `DATABASE_MODE=SUPABASE`: Express API doğrudan Supabase PostgreSQL `saha` şemasına bağlanır. Kullanıcı, müşteri, tarla, iş emri, finans ve yeni oturumlar orada tutulur. Yerel PostgreSQL başlatılmaz. Bağlantı yoksa açık hata verir; otomatik yerel veritabanına geçmez.
+- `DATABASE_MODE=LOCAL` veya boş: Windows kalıcı yerel PostgreSQL kurulumunu kullanır; veriler %USERPROFILE%/AppData/Local/SahaLocal/data altında tutulur.
+
+16 Ekim 2026 itibarıyla bu bilgisayarda SUPABASE seçilidir. İlk yönetici aynı e-posta/parola özetiyle aktarıldı; giriş bilgileri gitignored `.local/GIRIS_BILGILERI.md` dosyasındadır. Eski yerel oturumlar taşınmaz; geçişten sonra yeniden giriş gerekir. Ctrl+C uygulamayı durdurur, uzak veritabanını kapatmaz. İnternet yayını değildir. Supabase Dashboard → Table Editor → şema `saha` seçin; uygulama kullanıcıları `saha.users` içindedir, Supabase Auth → Users ekranıyla karıştırmayın.
+
+Supabase bağlantısı gizli `.env` içindeki DATABASE_URL alanındadır; URL schema=saha içermelidir. Bu dosyayı kaynak kontrolüne eklemeyin. Supabase aktarımından önce `npm run supabase:backup`, sonra `npm run supabase:transfer` kullanılabilir; farklı hedef veri varsa aktarım otomatik üzerine yazmaz. Yerel kaynak yedeği .local/backups altında korunur. Geçiş için DATABASE_MODE ve DATABASE_URL birlikte değiştirilmelidir; iç `scripts/local-start.ts` dosyasını doğrudan çalıştırmayın.
+
 
 Node 24 LTS, npm ve Docker Compose gerekir. Sürümler package.json ve package-lock.json içinde sabittir. Node 25 bu teslim ortamında bulunmuş olsa da LTS önerilir.
 
@@ -81,7 +89,7 @@ Supabase bağlantısı sunucuya özel `SUPABASE_DATABASE_URL` olarak `.env` içi
 
 `npm run supabase:transfer` önce yedek alır, ayrı `saha` şemasında migration uygular ve yalnız boş veya kaynakla tamamen aynı hedefe aktarır. Farklı hedef kayıtlarının üzerine yazmaz. Kullanıcı parolaları hash olarak korunur; aktif oturumlar taşınmaz. Satır/hash karşılaştırması yapılır. `saha` şeması ve tabloları Data API rollerinden ayrılır, RLS etkinleştirilir; erişim mevcut Express oturum/rol kontrolleri üzerinden yapılır. Publishable/secret API key ve JWKS, mevcut Prisma bağlantısında kullanılmaz.
 
-Bu araç aktif `DATABASE_URL` değerini otomatik değiştirmez. Başarılı aktarım ve doğrulama sonrasında uygulamanın bulut bağlantısına geçişi ayrıca yapılır; `npm run local` daima yerel PostgreSQL'i açar ve Supabase aday bağlantısını korur. Sunucu bağlantısında P1001/TCP timeout varsa parola doğrulanmış sayılmaz; port/ağ erişimi sağlanmadan migration veya veri geçişi yapılmaz.
+Bu araç aktif `DATABASE_URL` değerini otomatik değiştirmez. Başarılı aktarım ve doğrulama sonrasında uygulamanın bulut bağlantısına geçişi ayrıca yapılır; `npm run local` DATABASE_MODE seçimine göre çalışır; SUPABASE modunda uzak bağlantıyı korur ve yerel PostgreSQL açmaz. Sunucu bağlantısında P1001/TCP timeout varsa parola doğrulanmış sayılmaz; port/ağ erişimi sağlanmadan migration veya veri geçişi yapılmaz.
 
 Araştırma ekranı CSV + sözlük + yöntem + eksik veri + deney özeti + manifest dosyalarını indirilebilir sunar. İç işletme CSV'si ayrı ve özeldir. Paylaşılabilir paket ham konum/tarih/kimlik içermez; nadir özellik riskleri paylaşım öncesi insan incelemesi gerektirir. Kararlı rastgele araştırma kimliği eşleştirmesi veritabanında kalır. Mendeley Data'ya dosya hazırlar; yayımlama/DOI oluşturmaz.
 
@@ -104,3 +112,19 @@ HGM Atlas altlık entegrasyonu ve anahtar kurulumu: [HGM_ATLAS.md](HGM_ATLAS.md)
 
 Uydu altlığı: MAP_PROVIDER=MAPTILER ve server-only MAPTILER_API_KEY. satellite-v2 erişimi doğrulandı. Uydu varsayılan, standart OSM alternatifidir. Anahtar istemciye/repoya gönderilmez; gelişimde kota ve ticari plan koşulları takip edilir. HGM entegrasyonu isteğe bağlı kalır.
 
+# Hava tahmini (geliştirme/araştırma)
+
+Rota servisi hazırlığı: OpenRouteService Matrix/Directions sunucu adaptörleri için `.env` içine `ORS_API_KEY` eklenir. Anahtar tarayıcıya verilmez. Canlı servis testi geçti; depo/giriş teyidi sonrası günlük planda API matrisi veya ayrı manuel kaynak seçilir. Güncel adımlar ROAD_WORKFLOW.md içindedir. Ayrıntılar [ROAD_API_SETUP.md](ROAD_API_SETUP.md) içindedir.
+Yönetici menüsündeki **Hava tahmini** ekranında kayıtlı tarla ve tarih seçip **Tahmini getir** düğmesine basın. `.env`: `WEATHER_PROVIDER=OPEN_METEO`, `WEATHER_USAGE_MODE=RESEARCH`. API anahtarı gerekmez. Yeni tablo için `npm run db:generate` ve `npm run db:migrate`; uygulama için `npm run local`. Supabase Table Editor'da `saha.weather_forecasts` tablosunu seçin.
+
+Ücretsiz Open-Meteo erişimi geliştirme/araştırma içindir; üretim modunda kapalıdır. Ticari kullanım uygun servis planı gerektirir. Sorgu kayıtlı tarla konumunu hava sağlayıcısına gönderir; müşteri adı/telefon/not göndermez. Tahmin24 saatlik tablo olarak gösterilir ve Supabase snapshot'ına yazılır;15 dakika önbellek kullanılır. Uçuş uygunluğu veya otomatik rota henüz üretilmez. Ayrıntılar: WEATHER_API_DECISION.md. İlk tamamlanmamış rota aşaması P1 randevudur.
+
+
+## Otomatik maliyet ve fiyat — 17 Ekim 2026
+Randevu planlama → Birim fiyatlar: hizmet, ilaç ve diğer maliyet kalemleri; TL/dekar, TL/litre, TL/kg veya sabit adet/iş. Kalemler fiziksel silinmez; arşivlenir. Miktarlar ve fiyatlar kullanıcı tarafından belirlenir; ilaç/doz önerisi yoktur.
+Randevu ve yeni iş emrinde kalemler seçilir, litre/kg için toplam miktar girilir, maliyet üzerine kâr yüzdesi belirlenir ve hesaplama yapılır. Son fiyat = maliyet + maliyet × kâr / 100. Bu oran satış kâr marjı değildir. Vergi/fatura hesabı kapsam dışıdır.
+Alan, doğrulanmış parsel geometrisinden hesaplanır ve 0,001 dekar hassasiyetinde fiyatlandırılır. Sınır yoksa hesaplama yapılmaz. Her satır ve kâr kuruşa HALF_UP yuvarlanır; Decimal kullanılır. Eksik kalemler otomatik eklenmez; kullanıcı tüm maliyetleri seçmelidir.
+Supabase saha.price_items tarifeyi; appointment_requests.pricingSnapshot ve work_orders.snapshot.pricing tarihsel maliyet/fiyat dökümünü saklar. Tarife değişince eski kayıtlar değişmez. Kaydetmede sunucu alanı/tarifeyi tekrar hesaplar; sürüm veya toplam değişmişse yeniden hesaplama ister. Operatör bu finans verilerine erişemez. Tahmini maliyet gerçek gider defterine otomatik yazılmaz; çift sayılmaz. İlk gerçek işletme tarifesi kullanıcı tarafından girilecek; uydurma fiyat eklenmedi.
+
+## Sade kullanım
+Günlük akış ve sadeleştirilen ekranlar: [SADE_KULLANIM.md](SADE_KULLANIM.md). Günlük rota sonucunda Yazdır / PDF kaydet ile iş listesi alınabilir. Teknik hava/araştırma araçları yönetici için Gelişmiş araçlar altında; ekip/depo ayarları Randevu ve rota → İlk kurulum / ayarlar altında.

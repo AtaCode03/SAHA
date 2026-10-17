@@ -1,0 +1,54 @@
+import {roadPlanningIntegration} from './road-planning-integration.js';
+import assert from 'node:assert/strict';
+import type {PrismaClient} from '@prisma/client';
+export async function planningIntegration(db:PrismaClient,adminAgent:any,opAgent:any,otherAgent:any,write:any,adminCsrf:string,opCsrf:string,adminId:string,operatorId:string){
+ const c=await db.customer.create({data:{name:'SENTETİK PLAN MÜŞTERİ',phone:'TEST',neighborhood:'TEST',source:'SYNTHETIC'}});
+ const f=await db.field.create({data:{customerId:c.id,name:'SENTETİK PLAN TARLA',neighborhood:'TEST',source:'SYNTHETIC',boundary:{type:'Polygon',coordinates:[[[31,37],[31.001,37],[31.001,37.001],[31,37.001],[31,37]]]}}});
+ assert.equal((await opAgent.get('/api/pricing/items')).status,403);
+ assert.equal((await write(opAgent,opCsrf,'/pricing/items',{name:'TEST',category:'SERVICE',unit:'DEKAR',unitCost:'10.10'})).status,403);
+ const priceBody={name:'SENTETİK FİYAT',category:'SERVICE',unit:'DEKAR',unitCost:'10.10',active:true};
+ const price=await write(adminAgent,adminCsrf,'/pricing/items',priceBody);assert.equal(price.status,201,JSON.stringify(price.body));
+ const pricing={markupPercent:'20',lines:[{itemId:price.body.id,version:1}]};
+ const calculated=await write(adminAgent,adminCsrf,'/pricing/calculate',{fieldId:f.id,pricing});assert.equal(calculated.status,200,JSON.stringify(calculated.body));
+ const pricedBody={fieldId:f.id,service:'TEST PRICE',requestedDay:'2026-11-20',earliestDay:'2026-11-20',latestDay:'2026-11-20',windows:[{start:'09:00',end:'17:00'}],scope:'FULL_PARCEL',agreedPrice:calculated.body.total,pricing};
+ assert.equal((await write(adminAgent,adminCsrf,'/planning/appointments',{...pricedBody,agreedPrice:'0'})).status,409);
+ const pricedRequest=await write(adminAgent,adminCsrf,'/planning/appointments',pricedBody);assert.equal(pricedRequest.status,201,JSON.stringify(pricedRequest.body));assert.equal(pricedRequest.body.pricingSnapshot.total,calculated.body.total);
+ const pricedOrder=await write(adminAgent,adminCsrf,'/orders',{fieldId:f.id,operatorId,service:'TEST PRICE',plannedArea:'1',agreedPrice:calculated.body.total,pricing});assert.equal(pricedOrder.status,201,JSON.stringify(pricedOrder.body));assert.equal(pricedOrder.body.plannedArea,calculated.body.dekar);assert.equal(pricedOrder.body.snapshot.pricing.total,calculated.body.total);
+ const operatorPrice=await opAgent.get('/api/orders/'+pricedOrder.body.id);assert.equal(operatorPrice.status,200);assert.equal(operatorPrice.body.snapshot.pricing,undefined);assert.equal(operatorPrice.body.agreedPrice,undefined);
+ const updatedPrice=await adminAgent.put('/api/pricing/items/'+price.body.id).set('Origin',process.env.APP_ORIGIN!).set('x-csrf-token',adminCsrf).send({...priceBody,unitCost:'99',version:1});assert.equal(updatedPrice.status,200,JSON.stringify(updatedPrice.body));
+ assert.equal((await write(adminAgent,adminCsrf,'/pricing/calculate',{fieldId:f.id,pricing})).status,409);
+ assert.equal((await db.appointmentRequest.findUniqueOrThrow({where:{id:pricedRequest.body.id}})).agreedPrice.toFixed(2),calculated.body.total);
+ await write(adminAgent,adminCsrf,'/planning/appointments/'+pricedRequest.body.id+'/cancel',{reason:'SENTETİK TEST TAMAMLANDI'});
+ const d=await db.drone.create({data:{name:'SENTETİK PLAN DRONE',model:'TEST'}});
+ const profileBody={name:'SENTETİK TEK KİŞİ',operatorId,droneId:d.id,service:'TEST PLAN',preparationMinutes:'10',minutesPerDekar:'2',closingMinutes:'5',coefficientSource:'SENTETİK TEST KATSAYILARI',shiftStart:'08:00',shiftEnd:'18:00',baseName:'TEST DEPO'};
+ assert.equal((await opAgent.get('/api/planning/appointments')).status,403);
+ assert.equal((await write(opAgent,opCsrf,'/planning/profiles',profileBody)).status,403);
+ const p=await write(adminAgent,adminCsrf,'/planning/profiles',profileBody);assert.equal(p.status,201,JSON.stringify(p.body));
+ const self=await write(adminAgent,adminCsrf,'/planning/profiles',{...profileBody,name:'SENTETİK YÖNETİCİ SAHADA',operatorId:adminId});assert.equal(self.status,201);
+ const body={fieldId:f.id,service:'TEST PLAN',requestedDay:'2026-11-20',earliestDay:'2026-11-19',latestDay:'2026-11-21',windows:[{start:'09:00',end:'17:00'}],scope:'FULL_PARCEL',agreedPrice:'100.10'};
+ assert.equal((await write(adminAgent,adminCsrf,'/planning/appointments',{...body,windows:[{start:'17:00',end:'09:00'}]})).status,422);
+ const r=await write(adminAgent,adminCsrf,'/planning/appointments',body);assert.equal(r.status,201,JSON.stringify(r.body));
+ const preview={day:'2026-11-20',profileIds:[p.body.id],assignments:[{requestId:r.body.id,profileId:p.body.id}],legs:[{profileId:p.body.id,from:'BASE',to:r.body.id,minutes:10},{profileId:p.body.id,from:r.body.id,to:'BASE',minutes:20}]};
+ const draft=await write(adminAgent,adminCsrf,'/planning/plans/preview',preview);assert.equal(draft.status,201,JSON.stringify(draft.body));assert.equal(draft.body.result.stops.length,1);assert.equal(draft.body.result.routes[0].returnMinutes,20);
+ assert.equal((await write(adminAgent,adminCsrf,'/planning/plans/'+draft.body.id+'/approve',{})).status,422);
+ // Changing a profile invalidates the snapshot; approval must not silently use new coefficients.
+ await write(adminAgent,adminCsrf,'/planning/profiles/'+p.body.id,{...profileBody,preparationMinutes:'11'},'put');
+ assert.equal((await write(adminAgent,adminCsrf,'/planning/plans/'+draft.body.id+'/approve',{weatherReview:'SENTETİK MANUEL SAHA TEYİDİ'})).status,409);
+ const fresh=await write(adminAgent,adminCsrf,'/planning/plans/preview',preview);assert.equal(fresh.status,201);
+ const approved=await write(adminAgent,adminCsrf,'/planning/plans/'+fresh.body.id+'/approve',{weatherReview:'SENTETİK MANUEL SAHA TEYİDİ'});assert.equal(approved.status,200,JSON.stringify(approved.body));
+ const orderId=approved.body.orderIds[0],order=await db.workOrder.findUniqueOrThrow({where:{id:orderId},include:{appointment:true,predictions:true}});
+ assert.equal(order.status,'PLANNED');assert.equal(order.source,'SYNTHETIC');assert.equal(order.agreedPrice.toString(),'100.1');assert.equal(order.appointment?.id,r.body.id);assert.equal(order.predictions[0].method,'PROFILE');assert.ok(Number(order.plannedArea)>0);
+ assert.equal((await write(adminAgent,adminCsrf,'/planning/plans/'+fresh.body.id+'/approve',{weatherReview:'SENTETİK MANUEL SAHA TEYİDİ'})).status,409);
+ assert.equal((await write(adminAgent,adminCsrf,'/planning/appointments/'+r.body.id,body,'put')).status,409);
+ assert.equal((await otherAgent.get('/api/planning/orders/'+orderId+'/weather')).status,403);
+ const weather=await opAgent.get('/api/planning/orders/'+orderId+'/weather');assert.equal(weather.status,200);assert.equal(weather.body.appointment.requestedDay,body.requestedDay);assert.equal('agreedPrice' in weather.body.appointment,false);assert.equal(weather.body.forecast,null);
+ const own=await opAgent.get('/api/orders/'+orderId);assert.equal(own.status,200);assert.equal('agreedPrice' in own.body,false);
+ // Concurrent plans for the same pending request cannot create two orders.
+ const r2=await write(adminAgent,adminCsrf,'/planning/appointments',{...body,requestedDay:'2026-11-21',earliestDay:'2026-11-21',latestDay:'2026-11-21'});
+ const next={...preview,day:'2026-11-21',assignments:[{requestId:r2.body.id,profileId:p.body.id}],legs:[{profileId:p.body.id,from:'BASE',to:r2.body.id,minutes:10},{profileId:p.body.id,from:r2.body.id,to:'BASE',minutes:10}]};
+ const a=await write(adminAgent,adminCsrf,'/planning/plans/preview',next),b=await write(adminAgent,adminCsrf,'/planning/plans/preview',next);assert.equal(a.status,201);assert.equal(b.status,201);
+ const results=await Promise.all([a,b].map(d=>write(adminAgent,adminCsrf,'/planning/plans/'+d.body.id+'/approve',{weatherReview:'SENTETİK EŞZAMANLI ONAY TESTİ'})));assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
+ assert.equal(await db.workOrder.count({where:{appointment:{id:r2.body.id}}}),1);
+ await roadPlanningIntegration(db,adminAgent,opAgent,otherAgent,write,adminCsrf,opCsrf,f.id,p.body.id,body);
+ console.log('Planlama E2E geçti: esnek randevu, tek kişi/yönetici atama, otomatik alan/süre, snapshot değişimi, atomik/eşzamanlı onay, operatör hava görünümü ve finans gizliliği.');
+}

@@ -1,3 +1,7 @@
+import {PriceCalculator,PriceSummary} from './Pricing';
+import {OrderRoadRoute} from './PlanRoadRoute';
+import {Weather} from './Weather';
+import {Planning} from './Planning';
 import {FieldAddress} from './FieldAddress';
 import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
@@ -684,7 +688,7 @@ function OrderForm({
     service: "Tarımsal drone hizmeti",
     plannedArea: existing?.plannedArea ?? "",
     plannedAreaOrigin: "OPERATOR_ESTIMATE",
-    agreedPrice: existing?.agreedPrice ?? "",
+    agreedPrice: existing?.agreedPrice ?? "", pricing:undefined as any,
     notes: "",
     crewSize: existing?.snapshot?.settings?.crewSize ?? "",
     growthStage: existing?.snapshot?.settings?.growthStage ?? "",
@@ -733,7 +737,7 @@ function OrderForm({
                   service: f.service,
                   plannedArea: f.plannedArea,
                   plannedAreaOrigin: f.plannedAreaOrigin,
-                  agreedPrice: f.agreedPrice,
+                  agreedPrice: f.agreedPrice, pricing:f.pricing,
                   notes: f.notes,
                 },
           );
@@ -784,12 +788,7 @@ function OrderForm({
             required
             onChange={(e) => update("plannedArea", e.target.value)}
           />
-          <Input
-            label="Kararlaştırılmış bedel (TL)"
-            value={f.agreedPrice}
-            required
-            onChange={(e) => update("agreedPrice", e.target.value)}
-          />
+          <PriceCalculator fieldId={f.fieldId} onChange={(pricing,agreedPrice,dekar)=>F((old:any)=>({...old,pricing,agreedPrice,plannedArea:dekar??old.plannedArea,plannedAreaOrigin:"EXTERNAL"}))}/>
           <Select
             label="Planlanan alanın kaynağı"
             value={f.plannedAreaOrigin}
@@ -891,7 +890,7 @@ function OrderForm({
           message={error || fields.error || operators.error || drones.error}
         />
         <div className="actions">
-          <button disabled={busy}>Kaydet</button>
+          <button disabled={busy || (!existing && !f.pricing)}>Kaydet</button>
           <button className="secondary" type="button" onClick={onCancel}>
             Vazgeç
           </button>
@@ -1143,6 +1142,7 @@ function WorkDetail({
         description={`${o.customer.name} · ${number(o.plannedArea, "dekar")} · ${labels[o.status]}`}
       />
       <ErrorBox message={error} />
+      <div className="job-summary panel"><h2>Yapılacak iş</h2><p><strong>{o.service}</strong> · {number(o.plannedArea,"dekar")}</p><p>{date(o.plannedStart)} · {labels[o.status]}</p></div><details className="panel"><summary>Yol güzergâhını göster</summary><OrderRoadRoute id={id}/></details>
       <div className="detail-grid">
         <section className="panel">
           <h2>Müşteri ve konum</h2>
@@ -1164,7 +1164,7 @@ function WorkDetail({
         </section>
         <section className="panel">
           <span className="eyebrow">SAHA KAYDI</span>
-          <h2>Operasyon</h2>
+          <h2>İşi başlat / bitir</h2>
           <p>
             Hazırlık başlangıcından ayrılmaya hazır olana kadar. Bekleme dahil,
             ulaşım hariç.
@@ -1174,7 +1174,7 @@ function WorkDetail({
             <span>Toplam saha süresi</span>
           </div>
           {open && (
-            <p role="status">Açık aralık: {labels[open]}. Henüz bitirilmedi.</p>
+            <p role="status">Şu an: {labels[open]}</p>
           )}
           <div className="touch-actions">
             {actions.map((k) => (
@@ -1212,8 +1212,8 @@ function WorkDetail({
                 });
               }}
             >
-              <Input
-                label="Olay zamanı (İstanbul)"
+              <p><strong>{labels[kind]}</strong> işlemini kaydedin.</p><details><summary>Saati veya kayıt bilgisini değiştir</summary>              <Input
+                label="İşlem zamanı"
                 type="datetime-local"
                 step="1"
                 value={at}
@@ -1236,7 +1236,7 @@ function WorkDetail({
                 <option value="OPERATOR_ESTIMATE">Operatör tahmini</option>
                 <option value="EXTERNAL">Dış kaynaktan aktarılmış</option>
               </Select>
-              {kind === "COMPLETE" && (
+              </details>              {kind === "COMPLETE" && (
                 <>
                   <Input
                     label="Gerçek işlenen alan (dekar, bilinmiyorsa boş bırakın)"
@@ -1257,7 +1257,7 @@ function WorkDetail({
                 </>
               )}
               <div className="actions">
-                <button disabled={busy}>Olayı kaydet</button>
+                <button disabled={busy}>Onayla ve kaydet</button>
                 <button
                   type="button"
                   className="secondary"
@@ -1271,7 +1271,7 @@ function WorkDetail({
               </div>
             </form>
           )}
-          <div className="durations">
+          <details className="work-history"><summary>Süreler ve kayıt geçmişi</summary><div className="durations">
             {Object.entries(o.operation.totals).map(([k, v]) => (
               <div key={k}>
                 <span>{labels[k]}</span>
@@ -1279,7 +1279,7 @@ function WorkDetail({
               </div>
             ))}
           </div>
-          <h3>Olay geçmişi</h3>
+          <h3>İşlem geçmişi</h3>
           {!o.events.length && <p className="muted">Henüz olay kaydı yok.</p>}
           {o.events.map((e: any) => (
             <div className="event-row" key={e.id}>
@@ -1310,7 +1310,7 @@ function WorkDetail({
               </button>
             </div>
           ))}
-          {correction && (
+          </details>{correction && (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1384,7 +1384,7 @@ function WorkDetail({
       </div>
       {user.role === "ADMIN" && (
         <section className="panel">
-          <h2>Hizmet bedeli ve tahsilat</h2>
+          <h2>Hizmet bedeli ve tahsilat</h2>{o.snapshot?.pricing&&<PriceSummary value={o.snapshot.pricing}/>}
           <div className="metrics">
             <div className="metric">
               <span>Kararlaştırılmış</span>
@@ -1918,6 +1918,7 @@ function Dashboard({
   );
 }
 function App() {
+  const [advanced,Advanced] = useState(false);
   const [user, U] = useState<User | null>(null),
     [loading, L] = useState(true),
     [page, P] = useState("dashboard"),
@@ -1943,9 +1944,11 @@ function App() {
           ["customers", "♙", "Müşteriler"],
           ["fields", "◇", "Tarlalar"],
           ["parcels", "⌖", "Arsa / parsel sorgu"],
+          ...(advanced?[["weather", "☁", "Hava ayrıntıları"]]:[]),
+          ["planning", "▤", "Randevu ve rota"],
           ["drones", "✣", "Ekipman"],
           ["reports", "₺", "Finans ve rapor"],
-          ["research", "⌁", "Araştırma"],
+          ...(advanced?[["research", "⌁", "Araştırma"]]:[]),
         ]
       : []),
   ];
@@ -1972,7 +1975,7 @@ function App() {
               {label}
             </button>
           ))}
-        </nav>
+        </nav>{user.role==="ADMIN"&&<button className="nav" onClick={()=>{Advanced(!advanced);P("dashboard");S(null);}}>{advanced?"Temel ekrana dön":"Gelişmiş araçlar"}</button>}
         <div className="sidebar-bottom">
           <span className="avatar">{user.name.slice(0, 1)}</span>
           <div>
@@ -2004,8 +2007,10 @@ function App() {
         </div>
         <ErrorBox message={error} />
         {page === "dashboard" && <Dashboard user={user} onOpen={open} />}{" "}
+        {page === "planning" && user.role==='ADMIN' && <Planning onOpen={open}/>}
         {page === "customers" && <Customers />}
         {page === "fields" && <Fields />}
+        {page === "weather" && user.role === "ADMIN" && <Weather />}
         {page === "parcels" && user.role==='ADMIN' && <Parcels/>}
         {page === "drones" && <Drones />}
         {(page === "orders" || page === "calendar") && (
@@ -2017,11 +2022,10 @@ function App() {
         {page === "reports" && <Reports />}
         {page === "research" && <Research />}
         <footer>
-          SAHA · İşletme takibi ve araştırma veri toplama · TL / dekar / dakika
+          SAHA · Günlük işler ve müşteri takibi
         </footer>
       </main>
     </div>
   );
 }
 createRoot(document.getElementById("root")!).render(<App />);
-

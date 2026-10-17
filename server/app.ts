@@ -1,3 +1,10 @@
+import {pricingInput} from './pricing-domain.js';
+import {priceForField} from './pricing.js';
+import {pricingRouter} from './pricing.js';
+import {weatherRouter} from './weather.js';
+import {roadRouter} from './roads.js';
+import {roadPlanningRouter} from './road-planning.js';
+import {planningRouter,assertAppointmentSchedule} from './planning.js';
 import {mapRouter} from './maps.js';
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -60,6 +67,11 @@ app.post("/api/auth/login", loginLimiter, login);
 app.use("/api", requireAuth, csrf);
 app.use('/api/parcels',parcelRouter);
 app.use('/api/maps',mapRouter);
+app.use('/api/weather',weatherRouter);
+app.use('/api/roads',roadRouter);
+app.use('/api/road-planning',roadPlanningRouter);
+app.use('/api/planning',planningRouter);
+app.use('/api/pricing',pricingRouter);
 app.get("/api/auth/me", (req, res) =>
   res.json({ user: req.actor, csrf: req.session!.csrf }),
 );
@@ -281,7 +293,7 @@ app.put("/api/drones/:id", admin, async (req, res) =>
 app.get("/api/operators", admin, async (_req, res) =>
   res.json({
     data: await db.user.findMany({
-      where: { active: true, role: "OPERATOR" },
+      where: { active: true },
       select: { id: true, name: true },
     }),
   }),
@@ -311,7 +323,7 @@ const orderInput = z
     plannedAreaOrigin: z
       .enum(["MEASURED", "OPERATOR_ESTIMATE", "EXTERNAL"])
       .default("OPERATOR_ESTIMATE"),
-    agreedPrice: money,
+    agreedPrice: money, pricing:pricingInput.optional(),
     notes: optionalText,
     settings: settings.default({
       crewSize: null,
@@ -334,7 +346,7 @@ async function validateSchedule(
 ) {
   if (input.operatorId) {
     const op = await tx.user.findUnique({ where: { id: input.operatorId } });
-    if (!op?.active || op.role !== "OPERATOR")
+    if (!op?.active)
       fail("ASSIGNMENT", "Aktif operatör seçin.");
   }
   if (input.droneId) {
@@ -357,7 +369,7 @@ async function validateSchedule(
   if (end <= start) fail("SCHEDULE", "Bitiş başlangıçtan sonra olmalı.");
   const op = await tx.user.findUnique({ where: { id: input.operatorId! } }),
     drone = await tx.drone.findUnique({ where: { id: input.droneId! } });
-  if (!op?.active || op.role !== "OPERATOR" || !drone?.active)
+  if (!op?.active || !drone?.active)
     fail("ASSIGNMENT", "Aktif operatör ve drone seçin.");
   const conflict = await tx.workOrder.findFirst({
     where: {
@@ -488,10 +500,12 @@ app.post("/api/orders", admin, async (req, res) => {
       const d = input.droneId
         ? await tx.drone.findUniqueOrThrow({ where: { id: input.droneId } })
         : null;
-      const { settings: config, plannedAreaOrigin, ...data } = input;
+      const { settings: config, plannedAreaOrigin, pricing, ...data } = input;
+      const priceSnapshot=pricing?await priceForField(tx,f,pricing):null;
+      if(priceSnapshot&&!new Prisma.Decimal(input.agreedPrice).equals(priceSnapshot.total))fail('PRICE_CHANGED','Fiyat değişti. Yeniden hesaplayın.',409);
       const o = await tx.workOrder.create({
         data: {
-          ...data,
+          ...data, ...(priceSnapshot?{agreedPrice:priceSnapshot.total,plannedArea:priceSnapshot.dekar}:{}),
           customerId: f.customerId,
           requestedAt: input.requestedAt
             ? new Date(input.requestedAt)
@@ -504,7 +518,7 @@ app.post("/api/orders", admin, async (req, res) => {
           source: f.source,
           snapshot: JSON.parse(
             JSON.stringify({
-              area: f.area,
+              pricing:priceSnapshot, area: priceSnapshot?.dekar??f.area,
               crop: f.crop,
               field: {
                 name: f.name,
@@ -552,6 +566,7 @@ app.put("/api/orders/:id/schedule", admin, async (req, res) => {
         (await tx.operationEvent.count({ where: { orderId: key } }))
       )
         fail("LOCKED", "Başlamış/terminal iş yeniden planlanamaz.");
+      await assertAppointmentSchedule(tx,o,input);
       await validateSchedule(tx, input, key);
       const drone = await tx.drone.findUniqueOrThrow({
         where: { id: input.droneId },
@@ -592,6 +607,7 @@ app.post("/api/orders/:id/status", admin, async (req, res) => {
       const key = id.parse(req.params.id),
         o = await tx.workOrder.findUniqueOrThrow({ where: { id: key } });
       assertTransition(o.status, input.status);
+      if(input.status==='PLANNED')await assertAppointmentSchedule(tx,o,{plannedStart:o.plannedStart?.toISOString(),plannedEnd:o.plannedEnd?.toISOString(),operatorId:o.operatorId,droneId:o.droneId});
       if (["RUNNING", "COMPLETED"].includes(input.status))
         fail(
           "USE_EVENTS",

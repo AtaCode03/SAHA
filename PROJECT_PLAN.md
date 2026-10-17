@@ -1,5 +1,11 @@
 # Seydişehir tarımsal drone hizmeti
 
+## 17 Ekim2026 — Güncel yol entegrasyonu teslimi
+Depo/araç girişi teyidi, ORS yol adayı, kalıcı yönlü Matrix snapshot/cache, otomatik yol süreleriyle günlük plan ve kayıtlı Directions güzergâhı tamamlandı. Kullanım ROAD_WORKFLOW.md; güncel ilerleme PLANNING_HANDOFF.md içinde.58 test ve build/typecheck; izole PostgreSQL'de7 migration ve yeni yol E2E geçti.20 tablo/RLS ve tekrar kurulumda veri koruma kontrol edildi. Supabase migration veri silmeden uygulandı. Gerçek işletme girdisi yerine sentetik E2E kullanıldı; gerçek tarla yolu pilotu bekler. Uygulama localhost:5173 üzerinde açık. Sonraki işler ayrıntılı saha koşulları, tam gün içi revizyon/ekip-araç yönetimi ve gerçek pilot.
+
+## 17 Ekim 2026 — Rota API hazırlığı
+Kullanıcı devam etti. OpenRouteService Matrix/Directions sunucu adaptörleri, yönetici/CSRF/istek sınırı, null/süre/birim doğrulaması ve günlük planda bağlantı durum kartı eklendi. Anahtar yalnız ORS_API_KEY sunucu ayarıdır; henüz gerçek API erişimi yapılmadı. Kullanıcı hesabı olduğunu ve anahtarı .env içine ekleyeceğini bildirdi.55 test, build/typecheck ve geçici PostgreSQL planlama/çekirdek E2E geçti. Üretim DB migration/reset yapılmadı. ROAD_API_SETUP.md kurulum/eksikleri, PLANNING_HANDOFF.md güncel devam noktasını açıklar. Depo/teyitli tarla girişleri, kalıcı yol matrisi ve otomatik plan girdisi/güzergâh görünümü bekler; manuel yol süresi akışı korunur. Anahtar ekleme sonrası canlı doğrulama kullanıcı bildirimi bekliyor.
+
 ## Çalışma ilkesi
 
 Tek işletme, Türkçe mobil panel; gerçek veri PostgreSQL'de. Tahmin veya tasarruf başarısı vaat edilmez. Her devam talimatında ilk tamamlanmamış aşamadan ilerlenir. Veritabanı resetlenmez.
@@ -143,3 +149,48 @@ Son UI doğrulaması: Çat 121/1 canlı sınırı MapTiler gerçek uydu görünt
 ## 15 Ekim 2026 — İlk Git teslimi
 Git deposu main dalıyla başlatıldı, origin https://github.com/AtaCode03/SAHA.git olarak ayarlandı. İlk indeks 70 dosya; .env, .local, node_modules, derleme çıktıları ve research/private hariç. İndeksteki dosyalar gerçek .env sırlarıyla karşılaştırıldı; eşleşme yok. Son build geçti; ilk commit öncesi 28 test tekrar doğrulandı. Farklı ada/parselde bulunamadı geri bildirimi için kullanıcıdan başarısız örnek bekleniyor; yalnız Çat 121/1 canlı sonucu doğrulanmış durumda.
 
+
+## 16 Ekim 2026 — Yerel PostgreSQL başlatma tanısı
+Kullanıcı pg_ctl veri dizini bulunamadı hatası bildirdi. İzinli dosya kontrolünde mevcut küme ve PG_VERSION18 yerinde; eski günlükte önceki Windows konsol kapanışı sonrası recovery kaydı vardı. Normal yeniden başlatma mevcut veriyi toparladı. Başlatıcı artık PG_VERSION erişimini açık denetler, ENOENT dışı dosya hatalarını gizlemez, her denemeye yeni günlük yazar, sabit dataRoot cwd/PGDATA ile pg_ctl çalıştırır ve çıkıştan sonra gerçek pg Client SELECT1 hazırlık kontrolü yapar. Embedded pakette pg_isready bulunmadığından haricî binary bağımlılığı eklenmedi. Kontrollü fast stop → soğuk başlangıç geçti. Reset/yedek geri yükleme yapılmadı. Kullanıcı1/müşteri1/tarla1 korundu; aynı yerel hesapla login200, web200. Build, typecheck ve28 test geçti. Uygulama yerelde açık bırakıldı. İlk dizin hatasının özgül Windows erişim nedeni kesinleştirilmedi; güncel hata günlüğü artık eski denemeleri içermez.
+
+
+## 16 Ekim 2026 — Supabase aktif veritabanına geçiş tamamlandı
+Önceki P1001 bu denemede tekrarlanmadı; Prisma bağlantısı başarılı. Hedef saha şeması14 tablo ve boş kullanıcı/müşteri/tarla olarak doğrulandı. Yerel web/API yazmaları durduruldu, .local/backups altında özel snapshot alındı. Transfer guard boş hedefe izin verecek, farklı dolu hedefi reddedecek şekilde düzeltildi. Kullanıcı1/müşteri1/tarla1 ilişkileri ve parola özeti korundu; aktarım kaynak-hedef hash karşılaştırması geçti. Eski sessions taşınmadı.
+DATABASE_MODE=SUPABASE ve DATABASE_URL schema=saha yalnız gizli .env içinde etkin. npm run local artık start-configured.ts ile seçili modu korur; supabase-start.ts uzak DB hazır/yönetici kontrolünden sonra localhost API/web açar, yerel DB'yi kullanmaz. Bağlantı yoksa otomatik local fallback yoktur. Yerel kaynak küme silinmedi.
+Canlı kontroller: aynı parola ile login200; token hashine karşılık gelen session Supabase'de bulundu, süresi geçerli; fields/customers200; logout204 sonrası session silindi.14 tablonun14'ünde RLS etkin. Build/typecheck ve28 test geçti. Supabase Dashboard Table Editor'da saha şeması seçilmeli; Supabase Auth kullanıcılarına geçiş yapılmadı. Uygulama açık bırakıldı.
+
+
+## 16 Ekim 2026 — Randevu/hava/rota geliştirme planı
+Kullanıcı 20 işlik bir gün için yakınlık, saha koşulları, hava/rüzgâr ve randevu pencerelerini birleştiren plan istedi. ROUTE_PLANNING_PLAN.md hazırlandı: P1 randevu/kapasite, P2 saha/giriş, P3 süre, P4 hava, P5 yol matrisi, P6 rota önerisi, P7 onay/operatör, P8 pilot/ölçüm. Bu iş için kod/migration/servis aboneliği yapılmadı. Sonraki planlama geliştirmesinin ilk tamamlanmamış aşaması P1. Önceki ML pilot ve parsel hatası takibi açık kalır.
+
+
+## 16 Ekim 2026 — Plan revizyonu: tek kişi varsayılan, otomatik alan/süre
+Kullanıcı randevu alanlarını onayladı: müşteri, tarla, hizmet, istenen gün, uygun saat aralıkları, tarih esnekliği. ROUTE_PLANNING_PLAN.md iki sürece ayrıldı: varsayılan tek kişi/tek ekip ve isteğe bağlı çoklu ekip. Yardımcı/çok ekip tanımı tek kişiye zorunlu değil. Parselden geometri alanı otomatik hesaplanıp m²/dekar kaynağıyla saklanacak; süre bir kez ayarlanan drone/hizmet/ekip profiliyle otomatik üretilecek. İlk profil katsayıları uydurulmaz, tarihsel baseline ayrı yöntemdir; gerçek verili model daha sonra doğrulanır. Tarla formuna alan/ürün/manuel koordinat kutuları geri eklenmez. Bu tur doküman revizyonudur; kod/migration çalıştırılmadı.
+
+
+## 16 Ekim 2026 — Hava API seçimi ve adaptör hazırlığı
+WeatherAPI/Open-Meteo/Tomorrow.io resmî kaynakları incelendi. Ticari kullanım ve düşük başlangıç maliyetiyle WeatherAPI.com seçildi. WeatherAPI server-only adaptör, normalize birimler/tarih, eksik=null, ayar status rotası ve testler eklendi. Anahtar yok; canlı veri, otomatik uygunluk ve rota çalışıyor diye sunulmaz. WEATHER_API_DECISION.md hesap/plan sınırları ve sonraki entegrasyonu tanımlar. Supabase şeması bu tur değiştirilmedi.
+
+
+Hava adaptörü doğrulaması: npm run build ve32 test geçti. Testler kph→m/s, sıfır/eksik ayrımı, yanlış tarih/ufuk, anahtar gizliliği ve yönetici status yetkisini kapsar. Canlı API anahtarı olmadığı için sağlayıcı erişimi denenmedi. Randevu P1 ve Supabase hava snapshot/cache migration'ı bekliyor.
+
+# Güncel çalışma durumu — 16 Ekim 2026 / Open-Meteo
+Ekran doğrulaması: mevcut hesapla giriş ve Hava tahmini menüsü açıldı; kayıtlı tarla üzerinden bugünün24 saatlik gerçek tahmini getirildi, Supabase kaydı ve RLS=true doğrulandı. Tekrarlı sorgu15 dakika önbelleğini kullandı.20 Ekim ayrıca adaptör seviyesinde canlı sorguyla doğrulandı. Özel ekran görüntüsü .local/verification/weather.png içinde, git dışında. Uygulama localhost:5173 üzerinde açık bırakıldı.
+Geliştirme/araştırma için kullanıcı onayıyla Open-Meteo seçildi. Yönetici Hava tahmini ekranı, tarla sınırından konum,24 saatlik tablo, gerçek servis adaptörü, Supabase weather_forecasts migration, değişmez snapshot,15 dakika cache ve eşzamanlı istek birleştirme eklendi. Onaylanan Seydişehir örnek merkezi için20 Ekim canlı sorgusu24 saat verdi. Ticari kullanım/production ücretsiz modda kapalı; uçuş uygunluğu kararı yok. Kullanıcı konum aktarımını ayrıca onayladı.
+Kontroller: build/typecheck geçti (mevcut >500 kB istemci paket uyarısı sürüyor),38 test geçti; ayrı geçici PostgreSQL'de5 migration ve müşteri→tarla→iş→operasyon→tahsilat E2E geçti. Supabase'e additive migration uygulandı; reset yok. Birim/tarih/eksik değer, rol/CSRF, servis hatasında yazmama ve snapshot/cache testleri eklendi. Sandbox EPERM/ağ sınırı nedeniyle test ve başlatma normal kullanıcı ortamında tekrarlandı, geçti. npm run local seçili Supabase modunu korur. Sonraki ilk tamamlanmamış planlama aşaması P1 randevu; P4 politika/rota birleştirmesi ve saha pilotu bekler. Yeni hava snapshotları eski yerel aktarım yedeği kapsamına dahil değildir; yedek genişletme ayrı yapılmalı.
+
+
+## 16 Ekim 2026 — Kullanıcı isteğiyle duruldu
+Randevu/planlama geliştirmesinde tamamlananlar ve son eklerde kalan doğrulamalar PLANNING_HANDOFF.md içinde. Supabase migration uygulandı; planın bütünü tamamlanmış değildir. Rota servisi seçimi yapılmadı. Kullanıcı devam demeden ilerlenmeyecek.
+
+
+## 17 Ekim 2026 — Maliyet ve son fiyat
+- [x] İki ilaç maliyet yöntemi: TL/dekar veya toplam litre/kg × birim maliyet.
+- [x] Yönetici birim maliyet menüsü, sürümlü düzenleme/arşiv ve audit.
+- [x] Randevu ve doğrudan iş emrinde sunucuda Decimal maliyet + kâr hesabı; tarihi snapshot; operatörden finans gizleme.
+- [x] Yeni additive migration ve Supabase SQL paketinde RLS/yetki sınırı.
+- [ ] Gerçek birim maliyetlerin işletme tarafından girilmesi ve gerçek müşteriyle fiyat akışının pilot teyidi.
+Maliyet tahminleri gerçekleşen giderlere otomatik kaydedilmez. Vergi/fatura hesaplama kapsam dışı. Sonraki geliştirmeye ROAD_WORKFLOW ve ROUTE_PLANNING_PLAN içindeki kalan pilot/iyileştirmelerden devam edin.
+
+## 17 Ekim 2026 — Sade saha ekranları
+Günlük kullanıcı akışı sadeleştirildi; hava/araştırma menüleri gelişmiş araçlara, ekip/depo kurulumları ayarlara, süre ve olay ayrıntıları açılır bölümlere taşındı. Operatörün iş ekranında hava tablosu yok. Günlük planın yazdır/PDF iş listesi eklendi. Sunucu hava/rol/atama/finans kontrolleri korunuyor. Kullanım: SADE_KULLANIM.md. Build/typecheck ve 65 test geçti; gerçek saha pilotu bekliyor.

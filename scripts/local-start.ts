@@ -1,3 +1,4 @@
+import {Client} from 'pg';
 import { randomBytes } from "node:crypto";
 import {
   mkdir,
@@ -32,8 +33,9 @@ const exists = async (p: string) => {
   try {
     await access(p);
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
   }
 };
 const stateFile = path.join(local, "state.json");
@@ -105,6 +107,8 @@ if (!state) {
   };
   await writeFile(stateFile, JSON.stringify(state), { mode: 0o600 });
 }
+if (!(await exists(path.join(data, "PG_VERSION"))))
+  throw Error(`Mevcut PostgreSQL veri klasörü okunamıyor: ${data}. Veri sıfırlanmadı; dosya erişimini kontrol edin.`);
 let running = false;
 try {
   execFileSync(ctl, ["-D", data, "status"], {
@@ -118,6 +122,7 @@ if (!running) {
   // PostgreSQL in the middle of its recovery/shutdown. pg_ctl still waits
   // for readiness; all normal shutdowns below use pg_ctl fast stop.
   const startupLog = path.join(local, "postgres-startup.log");
+  await writeFile(startupLog, `Başlatma: ${new Date().toISOString()}\nVeri klasörü: ${data}\n`, {mode:0o600});
   const fd = openSync(startupLog, "a", 0o600);
   const exitCode = await new Promise<number>((resolve, reject) => {
     let child;
@@ -136,7 +141,7 @@ if (!running) {
           "-w",
           "start",
         ],
-        { windowsHide: true, detached: true, stdio: ["ignore", fd, fd] },
+        { cwd: dataRoot, env: {...process.env, PGDATA:data}, windowsHide: true, detached: true, stdio: ["ignore", fd, fd] },
       );
     } finally {
       closeSync(fd);
@@ -144,13 +149,17 @@ if (!running) {
     child.once("error", reject);
     child.once("exit", (code) => resolve(code ?? 1));
   });
-  if (exitCode !== 0) {
+  let accepting = false;
+  const probe = new Client({connectionString:state.databaseUrl.replace('/saha_local','/postgres'),connectionTimeoutMillis:5000,query_timeout:5000});
+  try { await probe.connect(); await probe.query('SELECT 1'); accepting = true; } catch {} finally { await probe.end().catch(()=>{}); }
+  if (!accepting) {
     const detail = (await readFile(startupLog, "utf8")).slice(-2500);
     throw new Error(
-      `PostgreSQL başlatılamadı. Mevcut veri korundu. Ayrıntı: ${startupLog}\n${detail}`,
+      `PostgreSQL bağlantı kabul etmiyor (pg_ctl çıkış: ${exitCode}). Mevcut veri korundu. Ayrıntı: ${startupLog}\n${detail}`,
     );
   }
 }
+console.log("PostgreSQL hazır. Yerel veritabanı kontrol ediliyor…");
 const control = new PrismaClient({
   datasourceUrl: state.databaseUrl.replace("/saha_local", "/postgres"),
 });

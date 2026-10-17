@@ -54,3 +54,21 @@ Tarla alanı ve alan kaynağı artık nullable: kullanıcı formundan bu iki gir
 
 Tarla crop alanı nullable; ürün formdan istenmez, eksik değer null saklanır. Mevcut ürün ve iş snapshot değerleri korunur.
 
+
+## Aktif kayıt deposu — 16 Ekim 2026
+Supabase PostgreSQL saha şeması aktiftir. users, sessions, customers, fields, drones, work_orders, operation_events, expenses, payments, audit_logs, prediction_snapshots, model_versions ve research_exports sunucu Prisma bağlantısıyla kullanılır. Supabase Auth kullanılmaz; mevcut bcrypt parola özeti ve HttpOnly/CSRF oturum modeli korunur. Tablolar anon/authenticated/service_role Data API erişimine kapalı ve RLS etkindir. PostgreSQL sunucu bağlantısı dışında tarayıcı doğrudan bu tablolara erişmez. Yerel kaynak kayıtları yedeklenip hash doğrulamasıyla taşındı; eski sessions taşınmadı.
+
+# Hava tahmini ek sözleşmesi — 16 Ekim 2026
+
+## Yol entegrasyonu ek sözleşmesi —17 Ekim2026
+fields.roadAccess ve planning_profiles.baseLocation: WGS84 longitude/latitude, OPERATOR_CONFIRMED kaynağı, gerekçe, confirmedAt/confirmedById ve tarlada geometri hash'i. Alan hesabı bu araç giriş noktasından yapılmaz; sınır geometrisi kullanılır. Geometri değişince eski giriş yeni matrise alınmaz. DB JSON kayıtları uygulamada doğrulanır; teyit fiziksel erişim garantisi değildir.
+
+travel_matrices: profil ve kullanıcı Restrict ilişkisi, kanonik girdi hash'i, profil/istek sürümleri ve teyitli noktaların snapshot'ı, retrievedAt/expiresAt timestamptz.15 dakika geçerlilik. Input.sourceType REAL/SYNTHETIC/MIXED; kaynak türü ve input.sources kaynakları gerçek/sentetik ayrımını korur. Payload.source ROAD_NETWORK_ESTIMATE farklı bir kavramdır; API tahmininin saha ölçümü olmadığını belirtir. Yönlü durationSeconds saniye, minutes yukarı yuvarlanmış dakika, meters metre, reachable=false için süre/mesafe null. Aynı koordinat veya yön tersliği sıfırla doldurulmaz.
+
+travel_routes: plan, profil ve oluşturan kullanıcıya Restrict ilişkileri; plan/profil başına tek değişmez yol çizgisi, API toplam metre/dakika, alınma zamanı, kaynak atfı ve sourceType. Geçmiş kayıt nokta değişince yeniden yazılmaz. Directions sonucu plan saatlerini otomatik değiştirmez. RLS açık ve doğrudan Data API istemci rolleri kapalıdır. Bu tablolar ve hassas koordinat/teyit gerekçeleri kamu araştırma paketine dahil değildir.
+`weather_forecasts` Supabase saha şemasındadır. Her kayıt tarla ve oluşturan kullanıcıya Restrict ilişkisi taşır; hedef gün YYYY-MM-DD, retrievedAt/issuedAt/validFrom/validTo timestamptz, issuedAt bilinmiyorsa null. Payload: istenen ve model grid konumu, provider, adapterVersion, usageMode=RESEARCH, dataType=FORECAST, saatlik validAt UTC, rüzgâr/hamle m/s (10 m), yön derece, sıcaklık °C ve nem % (2 m), yağış mm, yağış olasılığı %. Hamle önceki saat maksimumu; yağış önceki saat toplamı. Eksik ölçümler null kalır; veri saha ölçümü değildir. Kayıtlar değişmez snapshot olarak eklenir; inputHash ve alınma zamanı önbellek indeksidir. Yetki yalnız yönetici; RLS açık, doğrudan istemci rolleri kapalıdır. Hassas konum ve ayrıntılı zaman içeren payload kamu araştırma CSV'sine dahil değildir. Silme/aktarma için eski yerel yedeğin weather_forecasts içermediği dikkate alınmalıdır.
+
+
+## Fiyatlandırma sözleşmesi (COST_PLUS_V1)
+price_items: UUID, ad, SERVICE/CHEMICAL/OTHER kategori, DEKAR/LITER/KG/FIXED birim, numeric(14,2) unitCost TL, aktiflik, sürüm, timestamptz oluşturulma. Yönetici erişimi; audit ile güncelleme/arşiv, fiziksel silme API'si yok. RLS açık, doğrudan API rolleri yetkisiz.
+pricingSnapshot: geometriden hesaplanmış dekar (0,001), hesap anındaki geometri, kaynak, kalem UUID/sürüm/ad/birim/miktar/birim maliyet/satır toplamı, toplam maliyet, maliyet üzerine kâr yüzdesi/tutarı, son TL fiyatı, zaman ve yuvarlama yöntemi. Miktarlar toplam litre/kg/adettir; doz değildir. DEKAR miktarı sunucudan gelir. Tüm parasal hesaplar Decimal; sayısal PostgreSQL alanları numeric. Kalem ve kâr ROUND_HALF_UP ile 2 basamağa yuvarlanır. Geçmiş snapshot değişmez; bekleyen randevuyu düzenleme yeni fiyat teyidi gerektirir ve önceki değer audit'te kalır. Eski manuel fiyat kayıtları korunur. Finans snapshot'ları kamu araştırma paketine eklenmez.

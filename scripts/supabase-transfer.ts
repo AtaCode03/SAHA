@@ -92,13 +92,11 @@ try {
       const before = await target.$queryRaw<
         { table_count: bigint }[]
       >`SELECT count(*) AS table_count FROM information_schema.tables WHERE table_schema='saha'`;
-      if (
-        Number(before[0].table_count) > 0 &&
-        fingerprint(await snapshot(target)) !== fingerprint(data)
-      )
-        throw Error(
-          "Hedef saha şemasında farklı kayıtlar var; hiçbir tablo değiştirilmedi.",
-        );
+      if (Number(before[0].table_count) > 0) {
+        const prior = await snapshot(target);
+        if (models.some(m => prior[m].length > 0) && fingerprint(prior) !== fingerprint(data))
+          throw Error("Hedef saha şemasında farklı kayıtlar var; hiçbir tablo değiştirilmedi.");
+      }
       // Dedicated schema: no public Data API access to customers/password hashes/sessions.
       await target.$executeRawUnsafe('CREATE SCHEMA IF NOT EXISTS "saha"');
       await target.$executeRawUnsafe(

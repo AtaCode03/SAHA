@@ -7,7 +7,7 @@
     "node": ">=22.12"
   },
   "scripts": {
-    "local": "npm run build && tsx scripts/local-start.ts",
+    "local": "npm run build && tsx scripts/start-configured.ts",
     "supabase:check": "tsx scripts/supabase-transfer.ts check",
     "supabase:sql": "tsx scripts/build-supabase-sql.ts",
     "test:supabase-sql": "npm run supabase:sql && tsx scripts/test-postgres.ts --supabase-sql",

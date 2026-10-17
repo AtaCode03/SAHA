@@ -1,0 +1,10 @@
+import {Router} from 'express';
+import {rateLimit} from 'express-rate-limit';
+import {admin} from './auth.js';
+import {roadInput,roadStatus,roadMatrix,roadDirections} from './road-provider.js';
+export const roadRouter=Router();
+roadRouter.use(admin);
+roadRouter.get('/status',(_req,res)=>res.json(roadStatus()));
+roadRouter.use(rateLimit({windowMs:15*60000,limit:20,keyGenerator:req=>req.actor!.id,standardHeaders:true,legacyHeaders:false,message:{error:{code:'ROAD_RATE_LIMIT',message:'Yol sorgu sınırına ulaşıldı; biraz sonra deneyin.'}}}));
+roadRouter.post('/matrix',async(req,res)=>res.json(await roadMatrix(roadInput.parse(req.body))));
+roadRouter.post('/directions',async(req,res)=>res.json(await roadDirections(roadInput.parse(req.body))));

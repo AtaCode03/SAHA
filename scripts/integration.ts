@@ -1,3 +1,4 @@
+import {planningIntegration} from './planning-integration.js';
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -380,6 +381,7 @@ export async function integration() {
       (await write(adminAgent, "bad", "/customers", {})).status,
       403,
     );
+    await planningIntegration(db,adminAgent,opAgent,otherAgent,write,adminCsrf,opCsrf,adminUser.id,operator.id);
     assert.equal(
       (await write(opAgent, opCsrf, "/auth/revoke-all", {})).status,
       204,

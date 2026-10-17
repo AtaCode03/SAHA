@@ -62,7 +62,7 @@ export function assertAccess(
 export function overlaps(a: Date, b: Date, c: Date, d: Date) {
   return a < d && c < b;
 }
-export const boundarySchema = z.unknown().transform((value, ctx) => {
+const polygonBoundarySchema = z.unknown().transform((value, ctx) => {
   if (value === null || value === undefined) return null;
   try {
     const g = z
@@ -130,6 +130,10 @@ export const boundarySchema = z.unknown().transform((value, ctx) => {
     return z.NEVER;
   }
 });
+export const boundarySchema=z.unknown().transform((value,ctx)=>{
+ if((value as any)?.type!=='MultiPolygon'){const p=polygonBoundarySchema.safeParse(value);if(p.success)return p.data;ctx.addIssue({code:'custom',message:'Geçerli, kapalı ve kesişmeyen Polygon gerekli. Sıra [boylam, enlem].'});return z.NEVER;}
+ try{const m=z.object({type:z.literal('MultiPolygon'),coordinates:z.array(z.unknown()).min(1).max(30)}).strict().parse(value);const pieces=m.coordinates.map(c=>polygonBoundarySchema.parse({type:'Polygon',coordinates:c})!);for(let i=0;i<pieces.length;i++)for(let j=0;j<i;j++)if(booleanIntersects(polygon(pieces[i].coordinates),polygon(pieces[j].coordinates)))throw Error('Intersect');return {type:'MultiPolygon' as const,coordinates:pieces.map(p=>p.coordinates)};}catch{ctx.addIssue({code:'custom',message:'MultiPolygon parçaları geçerli ve ayrık olmalı.'});return z.NEVER;}
+});
 export function shapeFeatures(boundary: unknown) {
   if (!boundary)
     return {
@@ -138,12 +142,9 @@ export function shapeFeatures(boundary: unknown) {
       compactness: null,
     };
   const g = boundarySchema.parse(boundary)!;
-  const p = polygon(g.coordinates);
-  const a = area(p);
-  const perimeter = g.coordinates.reduce(
-    (s, r) => s + length(lineString(r), { units: "meters" }),
-    0,
-  );
+  const pieces=g.type==='Polygon'?[g.coordinates]:g.coordinates;
+  const a=pieces.reduce((sum,rings)=>sum+area(polygon(rings)),0);
+  const perimeter=pieces.reduce((sum,rings)=>sum+rings.reduce((n,r)=>n+length(lineString(r),{units:'meters'}),0),0);
   return {
     boundaryAreaDekar: a / 1000,
     perimeterMeters: perimeter,

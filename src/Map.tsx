@@ -6,6 +6,7 @@ type Props = {
   latitude?: number | null;
   longitude?: number | null;
   boundary?: any;
+  route?: any;
   onPoint?: (lat: number, lng: number) => void;
   onBoundary?: (value: any) => void;
 };
@@ -13,6 +14,7 @@ export function FieldMap({
   latitude,
   longitude,
   boundary,
+  route,
   onPoint,
   onBoundary,
 }: Props) {
@@ -67,15 +69,16 @@ export function FieldMap({
     if (boundary) {
       try {
         const b = L.geoJSON(boundary,{style:{color:"#dc2626",weight:3,fillColor:"#ef4444",fillOpacity:0.18}}).addTo(g);
-        m.fitBounds(b.getBounds());
+        const bounds=b.getBounds();if(latitude!=null&&longitude!=null)bounds.extend([latitude,longitude]);m.fitBounds(bounds);
       } catch {
         /* validation displayed by form */
       }
     }
-  }, [latitude, longitude, boundary]);
+    if(route){try{const line=L.geoJSON(route,{style:{color:'#2563eb',weight:5}}).addTo(g);m.fitBounds(line.getBounds(),{padding:[15,15]});}catch{ME('Yol çizgisi görüntülenemedi.');}}
+  }, [latitude, longitude, boundary, route]);
   return (
     <div>
-      <div className="map" ref={container} aria-label="Tarla konumu haritası" />
+      <div className="map" ref={container} aria-label={route?'Karayolu güzergâhı haritası':'Tarla konumu haritası'} />
       <p className="hint">{config?.message??'Harita yapılandırması yükleniyor…'}</p>
       {config&&<div className="actions" role="group" aria-label="Harita altlığı"><button type="button" className="secondary" aria-pressed={theme==='standard'} onClick={()=>T('standard')}>Standart</button><button type="button" className="secondary" aria-pressed={theme==='satellite'} onClick={()=>T('satellite')}>Hava fotoğrafı{config.satellite?'':' · anahtar gerekli'}</button><span className="hint"><a href={config[theme]?.attributionUrl} target="_blank" rel="noreferrer">{config[theme]?.attribution}</a></span></div>}
       {mapError&&<p className="error" role="alert">{mapError}</p>}

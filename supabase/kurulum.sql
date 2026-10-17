@@ -337,7 +337,7 @@ ALTER TABLE "payments" ADD CONSTRAINT "payments_positive" CHECK ("amount" > 0);
 ALTER TABLE "expenses" ADD CONSTRAINT "expenses_positive" CHECK ("amount" > 0);
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('9299b77b-6180-43cd-bab6-53150d0ae6e2','faa78fe9cfc33bbcd83414c355eca5515f1ae44b88fd2385377008a5dbe280c7','20261014120000_initial',now(),1);
+ VALUES ('41817099-bcdd-4efc-9532-15912acc8bfb','faa78fe9cfc33bbcd83414c355eca5515f1ae44b88fd2385377008a5dbe280c7','20261014120000_initial',now(),1);
  END IF;
 END $saha_migration$;
 
@@ -352,7 +352,7 @@ ALTER TABLE "work_orders" ADD COLUMN "actualArea" DECIMAL(12,3), ADD COLUMN "act
 ALTER TABLE "work_orders" ADD CONSTRAINT "orders_actual_area_positive" CHECK ("actualArea" IS NULL OR "actualArea" > 0);
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('55062069-f16c-4489-9a28-4cabcdeb8412','c49060d2b9cba4d256ca2c6e7cd6f36ae160a1ec5a4c5c91047b1f4718db9746','20261014150000_actual_area',now(),1);
+ VALUES ('557dd69b-88d7-444b-8817-edac67fcbf73','c49060d2b9cba4d256ca2c6e7cd6f36ae160a1ec5a4c5c91047b1f4718db9746','20261014150000_actual_area',now(),1);
  END IF;
 END $saha_migration$;
 
@@ -367,7 +367,7 @@ ALTER TABLE "fields" ALTER COLUMN "area" DROP NOT NULL, ALTER COLUMN "areaOrigin
 
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('39f3b944-38a3-4374-9049-1efcaa6938be','b5d4050166d57ce5d241c685dbd3e0c5e652bb1fa8096c4624f04875ed782c48','20261015102000_optional_field_area',now(),1);
+ VALUES ('fcd418bb-2309-4d20-92a4-02415159d9c0','b5d4050166d57ce5d241c685dbd3e0c5e652bb1fa8096c4624f04875ed782c48','20261015102000_optional_field_area',now(),1);
  END IF;
 END $saha_migration$;
 
@@ -381,7 +381,101 @@ BEGIN
 ALTER TABLE "fields" ALTER COLUMN "crop" DROP NOT NULL;
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('bec8c6c0-2df0-4489-982f-c481697af5a9','13d3228449a471161ccedf8c346c0d6c21547670a7e5b50943b24fed1fd69d0c','20261015103000_optional_field_crop',now(),1);
+ VALUES ('8b27e887-985a-4608-931f-b467cfbedd31','13d3228449a471161ccedf8c346c0d6c21547670a7e5b50943b24fed1fd69d0c','20261015103000_optional_field_crop',now(),1);
+ END IF;
+END $saha_migration$;
+
+-- Migration: 20261016183000_weather_forecasts
+DO $saha_migration$
+BEGIN
+ IF EXISTS(SELECT 1 FROM "saha"."_prisma_migrations" WHERE migration_name='20261016183000_weather_forecasts' AND rolled_back_at IS NULL AND finished_at IS NOT NULL AND checksum<>'7e302ba4b6c65043be38193e77219d45bebc5fa482b43c32d5fe220f8448ef3b') THEN
+  RAISE EXCEPTION 'Migration checksum farkli: 20261016183000_weather_forecasts. Mevcut veri korundu.';
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM "saha"."_prisma_migrations" WHERE migration_name='20261016183000_weather_forecasts' AND rolled_back_at IS NULL AND finished_at IS NOT NULL AND checksum='7e302ba4b6c65043be38193e77219d45bebc5fa482b43c32d5fe220f8448ef3b') THEN
+CREATE TABLE "weather_forecasts" (
+"id" TEXT NOT NULL,"fieldId" TEXT NOT NULL,"createdById" TEXT NOT NULL,"provider" TEXT NOT NULL,"adapterVersion" TEXT NOT NULL,"usageMode" TEXT NOT NULL,"requestedDate" TEXT NOT NULL,"inputHash" TEXT NOT NULL,"retrievedAt" TIMESTAMPTZ(3) NOT NULL,"issuedAt" TIMESTAMPTZ(3),"validFrom" TIMESTAMPTZ(3) NOT NULL,"validTo" TIMESTAMPTZ(3) NOT NULL,"payload" JSONB NOT NULL,CONSTRAINT "weather_forecasts_pkey" PRIMARY KEY ("id"),CONSTRAINT "weather_forecasts_fieldId_fkey" FOREIGN KEY ("fieldId") REFERENCES "fields"("id") ON DELETE RESTRICT ON UPDATE CASCADE,CONSTRAINT "weather_forecasts_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE);
+CREATE INDEX "weather_forecasts_fieldId_requestedDate_retrievedAt_idx" ON "weather_forecasts"("fieldId","requestedDate","retrievedAt");
+CREATE INDEX "weather_forecasts_inputHash_retrievedAt_idx" ON "weather_forecasts"("inputHash","retrievedAt");
+ALTER TABLE "weather_forecasts" ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON "weather_forecasts" FROM PUBLIC;
+DO $acl$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP IF EXISTS(SELECT FROM pg_roles WHERE rolname=r) THEN EXECUTE format('REVOKE ALL ON "weather_forecasts" FROM %I',r); END IF; END LOOP; END $acl$;
+
+ INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
+ VALUES ('69577a2b-2eff-4d57-9b53-e751bc9177a8','7e302ba4b6c65043be38193e77219d45bebc5fa482b43c32d5fe220f8448ef3b','20261016183000_weather_forecasts',now(),1);
+ END IF;
+END $saha_migration$;
+
+-- Migration: 20261016210000_appointments_planning
+DO $saha_migration$
+BEGIN
+ IF EXISTS(SELECT 1 FROM "saha"."_prisma_migrations" WHERE migration_name='20261016210000_appointments_planning' AND rolled_back_at IS NULL AND finished_at IS NOT NULL AND checksum<>'0095d34e7c9b11d313195bb4ffd2394e24af022f3222488a6724b3d80ab59c82') THEN
+  RAISE EXCEPTION 'Migration checksum farkli: 20261016210000_appointments_planning. Mevcut veri korundu.';
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM "saha"."_prisma_migrations" WHERE migration_name='20261016210000_appointments_planning' AND rolled_back_at IS NULL AND finished_at IS NOT NULL AND checksum='0095d34e7c9b11d313195bb4ffd2394e24af022f3222488a6724b3d80ab59c82') THEN
+CREATE TABLE "planning_profiles" (
+"id" TEXT PRIMARY KEY,"name" TEXT NOT NULL,"operatorId" TEXT NOT NULL REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE,"droneId" TEXT NOT NULL REFERENCES "drones"("id") ON DELETE RESTRICT ON UPDATE CASCADE,"service" TEXT NOT NULL,"preparationMinutes" DECIMAL(10,3) NOT NULL,"minutesPerDekar" DECIMAL(10,3) NOT NULL,"closingMinutes" DECIMAL(10,3) NOT NULL,"coefficientSource" TEXT NOT NULL,"shiftStart" TEXT NOT NULL,"shiftEnd" TEXT NOT NULL,"baseName" TEXT NOT NULL,"active" BOOLEAN NOT NULL DEFAULT true,"version" INTEGER NOT NULL DEFAULT 1,"createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+ALTER TABLE "planning_profiles" ADD COLUMN "weatherPolicy" JSONB;
+CREATE TABLE "appointment_requests" (
+"id" TEXT PRIMARY KEY,"fieldId" TEXT NOT NULL REFERENCES "fields"("id") ON DELETE RESTRICT ON UPDATE CASCADE,"service" TEXT NOT NULL,"requestedDay" TEXT NOT NULL,"earliestDay" TEXT NOT NULL,"latestDay" TEXT NOT NULL,"windows" JSONB NOT NULL,"scope" TEXT NOT NULL DEFAULT 'FULL_PARCEL',"agreedPrice" DECIMAL(14,2) NOT NULL,"status" TEXT NOT NULL DEFAULT 'PENDING',"revision" INTEGER NOT NULL DEFAULT 1,"orderId" TEXT UNIQUE REFERENCES "work_orders"("id") ON DELETE RESTRICT ON UPDATE CASCADE,"source" "Source" NOT NULL DEFAULT 'REAL',"createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX "appointment_requests_status_earliestDay_latestDay_idx" ON "appointment_requests"("status","earliestDay","latestDay");
+CREATE INDEX "appointment_requests_fieldId_idx" ON "appointment_requests"("fieldId");
+CREATE TABLE "daily_plans" (
+"id" TEXT PRIMARY KEY,"day" TEXT NOT NULL,"createdById" TEXT NOT NULL REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE,"input" JSONB NOT NULL,"result" JSONB NOT NULL,"status" TEXT NOT NULL DEFAULT 'DRAFT',"createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"approvedAt" TIMESTAMPTZ(3));
+CREATE INDEX "daily_plans_day_status_idx" ON "daily_plans"("day","status");
+ALTER TABLE "planning_profiles" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "appointment_requests" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "daily_plans" ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON "planning_profiles","appointment_requests","daily_plans" FROM PUBLIC;
+DO $acl$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP IF EXISTS(SELECT FROM pg_roles WHERE rolname=r) THEN EXECUTE format('REVOKE ALL ON "planning_profiles","appointment_requests","daily_plans" FROM %I',r); END IF; END LOOP; END $acl$;
+
+ INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
+ VALUES ('5a04f248-65ae-4574-9d7d-9c330f77143e','0095d34e7c9b11d313195bb4ffd2394e24af022f3222488a6724b3d80ab59c82','20261016210000_appointments_planning',now(),1);
+ END IF;
+END $saha_migration$;
+
+-- Migration: 20261017230000_road_access_matrices
+DO $saha_migration$
+BEGIN
+ IF EXISTS(SELECT 1 FROM "saha"."_prisma_migrations" WHERE migration_name='20261017230000_road_access_matrices' AND rolled_back_at IS NULL AND finished_at IS NOT NULL AND checksum<>'2b3b717dad789312fe0d2a0e5980853b271a8951ffe9f362c066e03e3317ac9d') THEN
+  RAISE EXCEPTION 'Migration checksum farkli: 20261017230000_road_access_matrices. Mevcut veri korundu.';
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM "saha"."_prisma_migrations" WHERE migration_name='20261017230000_road_access_matrices' AND rolled_back_at IS NULL AND finished_at IS NOT NULL AND checksum='2b3b717dad789312fe0d2a0e5980853b271a8951ffe9f362c066e03e3317ac9d') THEN
+ALTER TABLE "fields" ADD COLUMN "roadAccess" JSONB;
+ALTER TABLE "planning_profiles" ADD COLUMN "baseLocation" JSONB;
+CREATE TABLE "travel_matrices" (
+"id" TEXT PRIMARY KEY,"profileId" TEXT NOT NULL REFERENCES "planning_profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE,"createdById" TEXT NOT NULL REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE,"inputHash" TEXT NOT NULL,"input" JSONB NOT NULL,"payload" JSONB NOT NULL,"retrievedAt" TIMESTAMPTZ(3) NOT NULL,"expiresAt" TIMESTAMPTZ(3) NOT NULL);
+CREATE INDEX "travel_matrices_profileId_inputHash_retrievedAt_idx" ON "travel_matrices"("profileId","inputHash","retrievedAt");
+CREATE TABLE "travel_routes" (
+"id" TEXT PRIMARY KEY,"planId" TEXT NOT NULL REFERENCES "daily_plans"("id") ON DELETE RESTRICT ON UPDATE CASCADE,"profileId" TEXT NOT NULL,"payload" JSONB NOT NULL,"createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE UNIQUE INDEX "travel_routes_planId_profileId_key" ON "travel_routes"("planId","profileId");
+ALTER TABLE "travel_routes" ADD COLUMN "createdById" TEXT NOT NULL REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "travel_routes" ADD CONSTRAINT "travel_routes_profileId_fkey" FOREIGN KEY ("profileId") REFERENCES "planning_profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "travel_matrices" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "travel_routes" ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON "travel_matrices","travel_routes" FROM PUBLIC;
+DO $acl$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP IF EXISTS(SELECT FROM pg_roles WHERE rolname=r) THEN EXECUTE format('REVOKE ALL ON "travel_matrices","travel_routes" FROM %I',r); END IF; END LOOP; END $acl$;
+
+ INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
+ VALUES ('b8313363-adc4-4113-8b21-60805e9194b2','2b3b717dad789312fe0d2a0e5980853b271a8951ffe9f362c066e03e3317ac9d','20261017230000_road_access_matrices',now(),1);
+ END IF;
+END $saha_migration$;
+
+-- Migration: 20261018010000_pricing
+DO $saha_migration$
+BEGIN
+ IF EXISTS(SELECT 1 FROM "saha"."_prisma_migrations" WHERE migration_name='20261018010000_pricing' AND rolled_back_at IS NULL AND finished_at IS NOT NULL AND checksum<>'9522061edff149985014b9c11b080408d12cbe9b80f25cfe28119bcb45ed8a25') THEN
+  RAISE EXCEPTION 'Migration checksum farkli: 20261018010000_pricing. Mevcut veri korundu.';
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM "saha"."_prisma_migrations" WHERE migration_name='20261018010000_pricing' AND rolled_back_at IS NULL AND finished_at IS NOT NULL AND checksum='9522061edff149985014b9c11b080408d12cbe9b80f25cfe28119bcb45ed8a25') THEN
+CREATE TABLE "price_items" ("id" TEXT PRIMARY KEY,"name" TEXT NOT NULL,"category" TEXT NOT NULL,"unit" TEXT NOT NULL,"unitCost" DECIMAL(14,2) NOT NULL CHECK ("unitCost">=0),"active" BOOLEAN NOT NULL DEFAULT true,"version" INTEGER NOT NULL DEFAULT 1,"createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX "price_items_active_name_idx" ON "price_items"("active","name");
+ALTER TABLE "appointment_requests" ADD COLUMN "pricingSnapshot" JSONB;
+ALTER TABLE "price_items" ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON "price_items" FROM PUBLIC;
+DO $acl$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP IF EXISTS(SELECT FROM pg_roles WHERE rolname=r) THEN EXECUTE format('REVOKE ALL ON "price_items" FROM %I',r); END IF; END LOOP; END $acl$;
+
+ INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
+ VALUES ('27c7ed42-53b1-42b7-857d-442248803cad','9522061edff149985014b9c11b080408d12cbe9b80f25cfe28119bcb45ed8a25','20261018010000_pricing',now(),1);
  END IF;
 END $saha_migration$;
 
