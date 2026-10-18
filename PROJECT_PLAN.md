@@ -225,3 +225,6 @@ Google Maps aktarımı yalnız GOOGLE_MAPS_ROUTE_PLAN.md dosyasında planlandı.
 Ayrıntı: GOOGLE_MAPS_ROUTE_PLAN.md. Bu aşamada randevu/iş durumu veya veritabanı değiştirilmez.
 
 18 Ekim randevu alacağı kontrolü: build/typecheck, 86 birim/SSR testi ve izole PostgreSQL uçtan uca akışı geçti. Yeni kontroller: talepte alacak, iptalde düşüm ve audit, programa dönüşümde çift saymama, program iptali. Supabase şemasında değişiklik yok. Canlı tarayıcı görsel kontrolü yapılmadı.
+
+18 Ekim — Bugünkü işler: yönetici ekranında istenen günü bugün olan PENDING randevular ayrı kartlarla gösterilir. Planlanan işler ayrı listede kalır; iptal ve SCHEDULED talepler bekleyen listesine girmez. API day filtresi, sayfalama ve yönetici yetkisi korunur. Operatöre atanmamış talepler açılmaz.
+Bugünkü randevular doğrulaması: build/typecheck ve 87 birim/SSR testi geçti. İzole PostgreSQL testleri gün filtresi, diğer günün dışlanması, iptal dışlanması ve operatör erişiminin reddini doğruladı. Yerel API ve arayüz yeniden başlatıldı.

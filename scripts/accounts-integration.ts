@@ -8,9 +8,13 @@ export async function accountsIntegration(db:PrismaClient,admin:any,op:any,write
  const a=await make('100.10','COMPLETED','2026-10-15T10:00:00Z'),b=await make('50.20','COMPLETED','2026-10-16T10:00:00Z'),planned=await make('999','PLANNED','2026-10-17T10:00:00Z');
  const url='/finance/accounts/'+customer.id;
  const request=await db.appointmentRequest.create({data:{fieldId:field.id,service:'SENTETİK RANDEVU',requestedDay:'2026-10-20',earliestDay:'2026-10-20',latestDay:'2026-10-20',windows:[{start:'08:00',end:'17:00'}],agreedPrice:'75.25',source:'SYNTHETIC'}});
+ const daily=await admin.get('/api/planning/appointments?status=PENDING&day=2026-10-20');assert.equal(daily.status,200);assert.ok(daily.body.data.some((a:any)=>a.id===request.id));
+ assert.ok(!(await admin.get('/api/planning/appointments?status=PENDING&day=2026-10-21')).body.data.some((a:any)=>a.id===request.id));
+ assert.equal((await op.get('/api/planning/appointments?status=PENDING&day=2026-10-20')).status,403);
+ assert.equal((await admin.get('/api/planning/appointments?status=PENDING&day=invalid')).status,422);
  let early=await admin.get('/api'+url);assert.equal(early.body.remaining,'225.55');assert.equal(early.body.collectible,'150.30');
  let earlyList=await admin.get('/api/finance/accounts?q='+encodeURIComponent(customer.name));assert.equal(earlyList.body.data[0].remaining,'225.55');
- const cancelled=await write(admin,csrf,'/planning/appointments/'+request.id+'/cancel',{reason:'SENTETİK MÜŞTERİ VAZGEÇTİ'});assert.equal(cancelled.status,200);
+ const cancelled=await write(admin,csrf,'/planning/appointments/'+request.id+'/cancel',{reason:'SENTETİK MÜŞTERİ VAZGEÇTİ'});assert.equal(cancelled.status,200);assert.ok(!(await admin.get('/api/planning/appointments?status=PENDING&day=2026-10-20')).body.data.some((a:any)=>a.id===request.id));
  assert.equal((await admin.get('/api'+url)).body.remaining,'150.30');
  assert.equal((await db.auditLog.count({where:{entity:'appointment',entityId:request.id,action:'CANCEL'}})),1);
  const linked=await db.appointmentRequest.create({data:{fieldId:field.id,service:'SENTETİK PROGRAM',requestedDay:'2026-10-20',earliestDay:'2026-10-20',latestDay:'2026-10-20',windows:[],agreedPrice:'999',source:'SYNTHETIC',status:'SCHEDULED',orderId:planned.id}});

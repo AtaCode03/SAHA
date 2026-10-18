@@ -1,3 +1,4 @@
+import {TodayAppointments} from './TodayAppointments';
 import {CashDesk,CustomerAccount,Settlement} from './Accounts';
 import {NextJob} from './NextJob';
 import {editableFieldPayload} from './form-errors';
@@ -1749,9 +1750,11 @@ function Research() {
 function Dashboard({
   user,
   onOpen,
+  onAppointments,
 }: {
   user: User;
   onOpen: (id: string) => void;
+  onAppointments: () => void;
 }) {
   const params = new URLSearchParams({
     from: iso(today() + "T00:00:00"),
@@ -1797,8 +1800,9 @@ function Dashboard({
           </p>
         </>
       )}
+      {user.role === "ADMIN" && <TodayAppointments onOpen={onAppointments}/>}
       <div className="section-head">
-        <h2>Bugünün işleri</h2>
+        <h2>Programlanan işler</h2>
         <span className="badge">{list.total} ziyaret</span>
       </div>
       <Empty {...list} count={list.data.length} />
@@ -1914,7 +1918,7 @@ function BusinessSettings({onOpen}:{onOpen:(id:string)=>void}){
           </span>
         </div>
         <ErrorBox message={error} />
-        {page === "dashboard" && <Dashboard user={user} onOpen={open} />}{" "}
+        {page === "dashboard" && <Dashboard user={user} onOpen={open} onAppointments={()=>P("planning")} />}{" "}
         {page === "planning" && user.role==='ADMIN' && <Planning onOpen={open} newField={<Registry initial="fields"/>}/>}
         {page === "registry" && <Registry/>}{page === "settings" && <BusinessSettings onOpen={open}/>}
         {page === "customers" && <Customers />}
