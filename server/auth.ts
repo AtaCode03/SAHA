@@ -5,6 +5,7 @@ import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { db } from "./db.js";
 import { AppError } from "./domain.js";
+import {loginIdentifier} from './login-identifier.js';
 declare global {
   namespace Express {
     interface Request {
@@ -83,7 +84,7 @@ export function csrf(req: Request, _res: Response, next: NextFunction) {
 }
 const loginInput = z
   .object({
-    email: z.email().max(200),
+    email: loginIdentifier,
     password: z
       .string()
       .min(1)
@@ -107,7 +108,7 @@ export async function login(req: Request, res: Response) {
     u?.passwordHash ?? dummyHash,
   );
   if (!matches || !u?.active)
-    throw new AppError(401, "LOGIN_FAILED", "E-posta veya parola hatalı.");
+    throw new AppError(401, "LOGIN_FAILED", "Kullanıcı adı/e-posta veya parola hatalı.");
   const raw = token(),
     csrf = token();
   const hours = z.coerce

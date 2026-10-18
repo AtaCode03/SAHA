@@ -228,3 +228,7 @@ Ayrıntı: GOOGLE_MAPS_ROUTE_PLAN.md. Bu aşamada randevu/iş durumu veya verita
 
 18 Ekim — Bugünkü işler: yönetici ekranında istenen günü bugün olan PENDING randevular ayrı kartlarla gösterilir. Planlanan işler ayrı listede kalır; iptal ve SCHEDULED talepler bekleyen listesine girmez. API day filtresi, sayfalama ve yönetici yetkisi korunur. Operatöre atanmamış talepler açılmaz.
 Bugünkü randevular doğrulaması: build/typecheck ve 87 birim/SSR testi geçti. İzole PostgreSQL testleri gün filtresi, diğer günün dışlanması, iptal dışlanması ve operatör erişiminin reddini doğruladı. Yerel API ve arayüz yeniden başlatıldı.
+
+18 Ekim — Bölgesel tanıtım vurgusu kaldırıldı: giriş metni ve tarayıcı başlığı genel SAHA marka diline çevrildi; rota düğmeleri başlangıç noktası olarak adlandırıldı. Gerçek adresler, demo katalog ve mevcut rota başlangıcının yaklaşık konum açıklaması doğruluk için korundu.
+
+18 Ekim — Kullanıcı adıyla giriş eklendi; mevcut e-posta girişleri korunur. Yeni yönetici hesabının parolası bcrypt 12 ile özetlenir; düz parola yalnız Git dışı .local dizininde teslim edilir.

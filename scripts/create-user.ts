@@ -1,9 +1,10 @@
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "../server/db.js";
+import {loginIdentifier} from '../server/login-identifier.js';
 const input = z
   .object({
-    USER_EMAIL: z.email(),
+    USER_EMAIL: loginIdentifier,
     USER_NAME: z.string().min(2),
     USER_PASSWORD: z
       .string()

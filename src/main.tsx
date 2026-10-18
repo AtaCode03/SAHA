@@ -75,9 +75,7 @@ function Login({ onLogin }: { onLogin: (u: User) => void }) {
       <div className="login-story">
         <div className="wordmark">◈ SAHA</div>
         <h1>
-          Seydişehir'de
-          <br />
-          her işin kaydı
+          Her işin kaydı
           <br />
           yerinde.
         </h1>
@@ -87,7 +85,7 @@ function Login({ onLogin }: { onLogin: (u: User) => void }) {
           operasyon ve tahsilat takibi.
         </p>
         <div className="story-foot">
-          SEYDİŞEHİR · KONYA
+          TARIMSAL DRONE HİZMETLERİ
           <br />
           <small>İşletme operasyon paneli</small>
         </div>
@@ -113,8 +111,8 @@ function Login({ onLogin }: { onLogin: (u: User) => void }) {
         <h2>Hoş geldiniz</h2>
         <p className="muted">Size tanımlanan hesapla giriş yapın.</p>
         <Input
-          label="E-posta"
-          type="email"
+          label="Kullanıcı adı veya e-posta"
+          type="text"
           autoComplete="username"
           value={email}
           onChange={(e) => E(e.target.value)}

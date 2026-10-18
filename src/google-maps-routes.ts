@@ -26,7 +26,7 @@ export function googleMapsRoutes(origin:MapPoint,stops:MapStop[],returnToStart=f
  if(new Set(stops.map(s=>s.id)).size!==stops.length)throw Error('Listede tekrarlı durak var; günlük sırayı yenileyin.');
  const targets:RouteStop[]=stops.map((s,i)=>({id:s.id,name:s.name,point:coordinates(s.coordinates),sequence:i+1,isReturn:false}));
  if(!targets.length)return {parts:[],individual:[]};
- if(returnToStart)targets.push({id:'__return_to_start__',name:'Seydişehir merkeze dönüş',point:start,sequence:targets.length+1,isReturn:true});
+ if(returnToStart)targets.push({id:'__return_to_start__',name:'Başlangıç noktasına dönüş',point:start,sequence:targets.length+1,isReturn:true});
  const parts:{number:number;origin:MapPoint;stops:RouteStop[];url:string}[]=[];
  let previous=start;
  for(let i=0;i<targets.length;i+=MAX_TARGETS){const group=targets.slice(i,i+MAX_TARGETS);parts.push({number:parts.length+1,origin:previous,stops:group,url:directionsUrl(previous,group.map(s=>s.point))});previous=group.at(-1)!.point;}
