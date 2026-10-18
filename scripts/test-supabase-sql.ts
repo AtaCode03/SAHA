@@ -17,10 +17,11 @@ export async function testSupabaseSql(url:string){
   await client.query(sql); // A repeat must preserve records and ledger, not recreate tables.
   assert.equal((await db.user.findUniqueOrThrow({where:{id:user.id}})).email,user.email);
   const tables=await client.query("SELECT tablename,rowsecurity FROM pg_tables WHERE schemaname='saha'");
-  assert.equal(tables.rows.length,21);assert.ok(tables.rows.every((t:any)=>t.rowsecurity));
-  const migrations=await client.query('SELECT count(*)::int AS n FROM saha._prisma_migrations');assert.equal(migrations.rows[0].n,8);
+  assert.equal(tables.rows.length,22);assert.ok(tables.rows.every((t:any)=>t.rowsecurity));
+  const migrations=await client.query('SELECT count(*)::int AS n FROM saha._prisma_migrations');assert.equal(migrations.rows[0].n,9);
   const access=await client.query("SELECT has_schema_privilege('anon','saha','USAGE') AS allowed");assert.equal(access.rows[0].allowed,false);
   execFileSync(process.execPath,['node_modules/prisma/build/index.js','migrate','status'],{env:{...process.env,DATABASE_URL:remoteUrl.toString()},stdio:'pipe',windowsHide:true});
-  console.log('Supabase SQL testi gecti: 21 tablo, RLS/erisim kisiti, tekrar calistirmada veri korunmasi ve Prisma migration status uyumu.');
+  console.log('Supabase SQL testi gecti: 22 tablo, RLS/erisim kisiti, tekrar calistirmada veri korunmasi ve Prisma migration status uyumu.');
  }finally{await db.$disconnect();await client.end();}
 }
+

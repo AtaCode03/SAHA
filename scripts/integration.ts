@@ -1,3 +1,4 @@
+import {accountsIntegration} from './accounts-integration.js';
 import {planningIntegration} from './planning-integration.js';
 import "dotenv/config";
 import assert from "node:assert/strict";
@@ -381,6 +382,7 @@ export async function integration() {
       (await write(adminAgent, "bad", "/customers", {})).status,
       403,
     );
+    await accountsIntegration(db,adminAgent,opAgent,write,adminCsrf,opCsrf);
     await planningIntegration(db,adminAgent,opAgent,otherAgent,write,adminCsrf,opCsrf,adminUser.id,operator.id);
     assert.equal(
       (await write(opAgent, opCsrf, "/auth/revoke-all", {})).status,
@@ -395,3 +397,4 @@ export async function integration() {
   }
 }
 if (process.argv[1]?.endsWith("integration.ts")) await integration();
+

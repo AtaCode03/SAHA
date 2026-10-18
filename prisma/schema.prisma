@@ -69,6 +69,7 @@ model Session {
   @@map("sessions")
 }
 model Customer {
+  receipts CustomerReceipt[]
   id String @id @default(uuid())
   researchId String @unique @default(uuid())
   name String
@@ -121,6 +122,8 @@ model Drone {
   @@map("drones")
 }
 model WorkOrder {
+  dueDay String?
+  creditNote String?
   id String @id @default(uuid())
   researchId String @unique @default(uuid())
   customerId String
@@ -155,6 +158,7 @@ model WorkOrder {
   @@index([operatorId,status,plannedStart])
   @@index([droneId,plannedStart])
   @@index([status,completedAt])
+  @@index([customerId,status,completedAt])
   @@map("work_orders")
 }
 
@@ -276,6 +280,10 @@ model Expense {
   @@map("expenses")
 }
 model Payment {
+  method String @default("LEGACY")
+  version Int @default(1)
+  receiptId String?
+  receipt CustomerReceipt? @relation(fields:[receiptId],references:[id],onDelete:Restrict)
   id String @id @default(uuid())
   orderId String
   order WorkOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
@@ -284,6 +292,7 @@ model Payment {
   note String?
   idempotencyKey String @unique
   @@index([orderId,at])
+  @@index([receiptId])
   @@map("payments")
 }
 model AuditLog {
@@ -299,6 +308,22 @@ model AuditLog {
   at DateTime @default(now()) @db.Timestamptz(3)
   @@index([entity,entityId,at])
   @@map("audit_logs")
+}
+
+model CustomerReceipt {
+ id String @id @default(uuid())
+ customerId String
+ customer Customer @relation(fields:[customerId],references:[id],onDelete:Restrict)
+ amount Decimal @db.Decimal(14,2)
+ method String
+ at DateTime @db.Timestamptz(3)
+ note String?
+ idempotencyKey String @unique
+ requestHash String
+ version Int @default(1)
+ payments Payment[]
+ @@index([customerId,at])
+ @@map("customer_receipts")
 }
 model PredictionSnapshot {
   id String @id @default(uuid())

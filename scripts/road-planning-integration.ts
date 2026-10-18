@@ -26,7 +26,7 @@ export async function roadPlanningIntegration(db:PrismaClient,adminAgent:any,opA
   const point={longitude:31,latitude:37,confirmed:true,reason:'SENTETİK GİRİŞ TEYİDİ'};
   assert.equal((await write(opAgent,opCsrf,'/road-planning/fields/'+fieldId+'/access',{point,geometryHash:details.body.geometryHash},'put')).status,403);
   const save=()=>write(adminAgent,csrf,'/road-planning/fields/'+fieldId+'/access',{point,geometryHash:details.body.geometryHash},'put');assert.equal((await save()).status,200);
-  const m=await matrix();assert.equal(m.status,201,JSON.stringify(m.body));assert.equal(m.body.payload.legs.length,6);assert.equal(m.body.input.sourceType,'SYNTHETIC');const count=externalCalls;assert.equal((await matrix()).status,200);assert.equal(externalCalls,count);
+  const m=await matrix();assert.equal(m.status,201,JSON.stringify(m.body));assert.equal(m.body.payload.legs.length,6);assert.equal(m.body.input.sourceType,'SYNTHETIC');assert.equal(m.body.input.base.source,'APPROXIMATE_DISTRICT_CENTER');assert.equal(m.body.input.base.isLiveLocation,false);assert.equal(m.body.payload.points[0].latitude,37.419);assert.equal(m.body.payload.points[0].longitude,31.849);const count=externalCalls;assert.equal((await matrix()).status,200);assert.equal(externalCalls,count);
   const preview=(matrixId:string)=>write(adminAgent,csrf,'/planning/plans/preview',{day:'2026-11-22',profileIds:[profileId],assignments:input.requestIds.map(requestId=>({requestId,profileId})),legs:[],roadMatrixIds:[matrixId]});
   const draft=await preview(m.body.id);assert.equal(draft.status,201,JSON.stringify(draft.body));assert.equal(draft.body.result.travelSource,'OPENROUTESERVICE');assert.equal(draft.body.result.stops.length,2);
   // A changed confirmation invalidates old matrix/plan even when the coordinate is the same.
@@ -44,3 +44,4 @@ export async function roadPlanningIntegration(db:PrismaClient,adminAgent:any,opA
   console.log('Yol E2E geçti: teyit/CSRF/rol, eksik depo/giriş, sentetik API matrisi, kalıcı cache, eski/değişen nokta reddi, API kaynaklı plan onayı, kayıtlı LineString ve atanmış operatör erişimi. Gerçek konum aktarılmadı.');
  }finally{globalThis.fetch=originalFetch;if(originalKey===undefined)delete process.env.ORS_API_KEY;else process.env.ORS_API_KEY=originalKey;}
 }
+

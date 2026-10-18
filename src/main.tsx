@@ -1,3 +1,6 @@
+import {CashDesk,CustomerAccount,Settlement} from './Accounts';
+import {NextJob} from './NextJob';
+import {editableFieldPayload} from './form-errors';
 import {PriceCalculator,PriceSummary} from './Pricing';
 import {OrderRoadRoute} from './PlanRoadRoute';
 import {Weather} from './Weather';
@@ -242,6 +245,7 @@ function Pager({
   );
 }
 function Customers() {
+  const [account,Account]=useState("");
   const [q, Q] = useState(""),
     [page, P] = useState(1),
     [refresh, R] = useState(0),
@@ -260,6 +264,7 @@ function Customers() {
     notes: "",
     active: true,
   };
+  if(account)return <CustomerAccount id={account} onClose={()=>Account("")}/>;
   return (
     <>
       <PageHead
@@ -364,7 +369,7 @@ function Customers() {
               {c.source === "SYNTHETIC" && (
                 <span className="badge warning">Sentetik veri</span>
               )}
-              <p className="muted">{c.notes}</p>
+              <p className="muted">{c.notes}</p><button onClick={()=>Account(c.id)}>Hesap / ödeme al</button>
               <button
                 className="secondary"
                 onClick={() => {
@@ -441,8 +446,8 @@ function Fields() {
             B(true);
             E("");
             try {
-              const { id, ...body } = form;
-              body.boundary = boundary ? JSON.parse(boundary) : null;
+              const id = form.id;
+              const body = editableFieldPayload(form,boundary ? JSON.parse(boundary) : null);
               await api(
                 "/fields" + (id ? "/" + id : ""),
                 id ? "PUT" : "POST",
@@ -690,7 +695,7 @@ function OrderForm({
     plannedAreaOrigin: "OPERATOR_ESTIMATE",
     agreedPrice: existing?.agreedPrice ?? "", pricing:undefined as any,
     notes: "",
-    crewSize: existing?.snapshot?.settings?.crewSize ?? "",
+    crewSize: 1,
     growthStage: existing?.snapshot?.settings?.growthStage ?? "",
     refillAccess: existing?.snapshot?.settings?.refillAccess ?? "UNKNOWN",
     plannedSettings: existing?.snapshot?.settings?.plannedSettings ?? "",
@@ -782,22 +787,8 @@ function OrderForm({
             required
             onChange={(e) => update("service", e.target.value)}
           />
-          <Input
-            label="Planlanan alan (dekar)"
-            value={f.plannedArea}
-            required
-            onChange={(e) => update("plannedArea", e.target.value)}
-          />
+          <p>Parsel alanı: <strong>{f.plannedArea?number(f.plannedArea,'dekar'):'Parsel sınırı gerekli'}</strong><br/><small>Alan parsel sınırından otomatik hesaplanır.</small></p>
           <PriceCalculator fieldId={f.fieldId} onChange={(pricing,agreedPrice,dekar)=>F((old:any)=>({...old,pricing,agreedPrice,plannedArea:dekar??old.plannedArea,plannedAreaOrigin:"EXTERNAL"}))}/>
-          <Select
-            label="Planlanan alanın kaynağı"
-            value={f.plannedAreaOrigin}
-            onChange={(e) => update("plannedAreaOrigin", e.target.value)}
-          >
-            <option value="OPERATOR_ESTIMATE">Operatör tahmini</option>
-            <option value="MEASURED">Ölçülmüş</option>
-            <option value="EXTERNAL">Dış kaynak</option>
-          </Select>
         </>
       )}
       <Select
@@ -845,13 +836,7 @@ function OrderForm({
         value={f.sequence}
         onChange={(e) => update("sequence", e.target.value)}
       />
-      <Input
-        label="Planlanan ekip kişi sayısı (isteğe bağlı)"
-        type="number"
-        min="1"
-        value={f.crewSize}
-        onChange={(e) => update("crewSize", e.target.value)}
-      />
+      <p className="hint">Tek kişi çalışma</p>
       <Input
         label="Gelişim dönemi (isteğe bağlı)"
         value={f.growthStage}
@@ -1094,7 +1079,8 @@ function WorkDetail({
     [prediction, Q] = useState<any>(null),
     [paymentKey, PK] = useState(crypto.randomUUID()),
     [pendingPayment, PP] = useState<any>(null);
-  useEffect(() => {
+  const previousStatus=useRef<string|null>(null);
+  useEffect(()=>{if(user.role==='ADMIN'&&previousStatus.current==='RUNNING'&&o?.status==='COMPLETED')document.getElementById('job-payment')?.scrollIntoView({behavior:'smooth',block:'start'});previousStatus.current=o?.status??null;},[o?.status,user.role]);  useEffect(() => {
     api("/orders/" + id)
       .then(O)
       .catch((e) => E(e.message));
@@ -1383,83 +1369,8 @@ function WorkDetail({
         </section>
       </div>
       {user.role === "ADMIN" && (
-        <section className="panel">
-          <h2>Hizmet bedeli ve tahsilat</h2>{o.snapshot?.pricing&&<PriceSummary value={o.snapshot.pricing}/>}
-          <div className="metrics">
-            <div className="metric">
-              <span>Kararlaştırılmış</span>
-              <strong>{number(o.agreedPrice, "TL")}</strong>
-            </div>
-            <div className="metric">
-              <span>Düzeltme</span>
-              <strong>{number(o.adjustment, "TL")}</strong>
-            </div>
-            <div className="metric">
-              <span>Kalan bakiye</span>
-              <strong>{number(o.balance, "TL")}</strong>
-            </div>
-          </div>
-          <div className="form-grid">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const body = pendingPayment ?? {
-                  amount,
-                  at: new Date().toISOString(),
-                  idempotencyKey: paymentKey,
-                };
-                PP(body);
-                act(async () => {
-                  await api(`/orders/${id}/payments`, "POST", body);
-                  M("");
-                  PP(null);
-                  PK(crypto.randomUUID());
-                });
-              }}
-            >
-              <Input
-                label="Kısmi tahsilat (TL)"
-                disabled={Boolean(pendingPayment)}
-                value={amount}
-                required
-                onChange={(e) => M(e.target.value)}
-              />
-              <button disabled={busy}>Tahsilat kaydet</button>
-            </form>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                act(async () => {
-                  await api(`/orders/${id}/adjustment`, "POST", {
-                    adjustment: adjust,
-                    reason,
-                  });
-                  V("");
-                  N("");
-                });
-              }}
-            >
-              <Input
-                label="Toplam bedel düzeltmesi (TL; negatif olabilir)"
-                value={adjust}
-                required
-                onChange={(e) => V(e.target.value)}
-              />
-              <Text
-                label="Düzeltme gerekçesi"
-                value={reason}
-                required
-                minLength={5}
-                onChange={(e) => N(e.target.value)}
-              />
-              <button disabled={busy}>Bedeli düzelt</button>
-            </form>
-          </div>
-          {o.payments.map((p: any) => (
-            <p key={p.id}>
-              {date(p.at)} · {number(p.amount, "TL")}
-            </p>
-          ))}
+        <section className="panel" id="job-payment">
+          <Settlement order={o} onSaved={()=>R(refresh+1)}/>
           <h3>İş durumu / ön tahmin</h3>
           {["REQUESTED", "PLANNED", "RUNNING", "POSTPONED"].includes(
             o.status,
@@ -1861,6 +1772,7 @@ function Dashboard({
         title="Bugün sahada"
         description={`${new Intl.DateTimeFormat("tr-TR", { timeZone: "Europe/Istanbul", dateStyle: "full" }).format(new Date())} · Europe/Istanbul`}
       />
+      {!list.loading&&!list.error&&<NextJob orders={list.data} onOpen={onOpen}/>}
       {user.role === "ADMIN" && (
         <>
           <ErrorBox message={error} />
@@ -1917,7 +1829,14 @@ function Dashboard({
     </>
   );
 }
-function App() {
+function Registry({initial='customers'}:{initial?:string}){
+ const [tab,T]=useState(initial);
+ return <><div className="actions section-tabs"><button className={tab==='customers'?'':'secondary'} onClick={()=>T('customers')}>Müşteriler</button><button className={tab==='fields'?'':'secondary'} onClick={()=>T('fields')}>Tarlalar</button></div>{tab==='customers'?<Customers/>:<Fields/>}</>;
+}
+function BusinessSettings({onOpen}:{onOpen:(id:string)=>void}){
+ const [tab,T]=useState('prices');
+ return <><div className="actions section-tabs"><button className={tab==='prices'?'':'secondary'} onClick={()=>T('prices')}>Fiyat ve çalışma bilgileri</button><button className={tab==='drones'?'':'secondary'} onClick={()=>T('drones')}>Drone bilgileri</button></div>{tab==='drones'?<Drones/>:<Planning settings onOpen={onOpen}/>}</>;
+}function App() {
   const [advanced,Advanced] = useState(false);
   const [user, U] = useState<User | null>(null),
     [loading, L] = useState(true),
@@ -1936,23 +1855,12 @@ function App() {
   if (loading) return <main className="empty">Oturum kontrol ediliyor…</main>;
   if (!user) return <Login onLogin={U} />;
   const nav = [
-    ["dashboard", "◫", "Genel bakış"],
-    ["calendar", "▦", "Günlük program"],
-    ["orders", "≡", "İş emirleri"],
-    ...(user.role === "ADMIN"
-      ? [
-          ["customers", "♙", "Müşteriler"],
-          ["fields", "◇", "Tarlalar"],
-          ["parcels", "⌖", "Arsa / parsel sorgu"],
-          ...(advanced?[["weather", "☁", "Hava ayrıntıları"]]:[]),
-          ["planning", "▤", "Randevu ve rota"],
-          ["drones", "✣", "Ekipman"],
-          ["reports", "₺", "Finans ve rapor"],
-          ...(advanced?[["research", "⌁", "Araştırma"]]:[]),
-        ]
-      : []),
-  ];
-  const open = (id: string) => {
+    ['dashboard','◫','Bugünkü işler'],
+    ...(user.role==='ADMIN'?[
+      ['registry','♙','Müşteriler ve tarlalar'],['planning','▤','Randevular'],['reports','₺','Kasa'],['settings','⚙','Ayarlar'],
+      ...(advanced?[['orders','≡','Tüm iş emirleri'],['calendar','▦','Takvim'],['parcels','⌖','Parsel sorgu'],['weather','☁','Hava ayrıntıları'],['research','⌁','Araştırma']]:[])
+    ]:[['orders','≡','İşlerim']]),
+  ];  const open = (id: string) => {
     S(id);
     P("detail");
   };
@@ -2007,7 +1915,8 @@ function App() {
         </div>
         <ErrorBox message={error} />
         {page === "dashboard" && <Dashboard user={user} onOpen={open} />}{" "}
-        {page === "planning" && user.role==='ADMIN' && <Planning onOpen={open}/>}
+        {page === "planning" && user.role==='ADMIN' && <Planning onOpen={open} newField={<Registry initial="fields"/>}/>}
+        {page === "registry" && <Registry/>}{page === "settings" && <BusinessSettings onOpen={open}/>}
         {page === "customers" && <Customers />}
         {page === "fields" && <Fields />}
         {page === "weather" && user.role === "ADMIN" && <Weather />}
@@ -2019,7 +1928,7 @@ function App() {
         {page === "detail" && selected && (
           <WorkDetail id={selected} user={user} onBack={() => P("orders")} />
         )}{" "}
-        {page === "reports" && <Reports />}
+        {page === "reports" && user.role==="ADMIN" && <CashDesk expenses={<Reports/>}/>}
         {page === "research" && <Research />}
         <footer>
           SAHA · Günlük işler ve müşteri takibi
@@ -2029,3 +1938,8 @@ function App() {
   );
 }
 createRoot(document.getElementById("root")!).render(<App />);
+
+
+
+
+

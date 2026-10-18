@@ -1,3 +1,5 @@
+> Güncel karar · 18 Ekim 2026: Randevu kaydedildiği anda kararlaştırılmış tutar Kasa → Alacaklar ve müşteri hesabına dahil edilir. Bekleyen talep iptal gerekçesiyle iptal edilince alacak düşer. Programa alınan talep bağlı iş üzerinden yalnız bir kez sayılır; iş iptali alacağı kaldırır. Erteleme alacağı kaldırmaz. Tahsilat yalnız iş tamamlandıktan sonra açılır. Ödemeli iş iptali engellenir; ödeme silinmez, gerekçeli düzeltme gerekir. Eski bağımsız iş emirleri tamamlanınca alacak oluşturur. Bu karar aşağıdaki önceki “yalnız tamamlanan işler” kuralının yerini alır. Yeni tablo/migration gerekmez; mevcut randevu ve iş kayıtları esas alınır.
+
 # Seydişehir tarımsal drone hizmeti
 
 ## 17 Ekim2026 — Güncel yol entegrasyonu teslimi
@@ -194,3 +196,32 @@ Maliyet tahminleri gerçekleşen giderlere otomatik kaydedilmez. Vergi/fatura he
 
 ## 17 Ekim 2026 — Sade saha ekranları
 Günlük kullanıcı akışı sadeleştirildi; hava/araştırma menüleri gelişmiş araçlara, ekip/depo kurulumları ayarlara, süre ve olay ayrıntıları açılır bölümlere taşındı. Operatörün iş ekranında hava tablosu yok. Günlük planın yazdır/PDF iş listesi eklendi. Sunucu hava/rol/atama/finans kontrolleri korunuyor. Kullanım: SADE_KULLANIM.md. Build/typecheck ve 65 test geçti; gerçek saha pilotu bekliyor.
+
+## 17 Ekim — Yerleşim aşaması tamamlandı
+- [x] Sade ana menü, ortak müşteri/tarla alanı ve ayrı ayarlar.
+- [x] Üç adımlı randevu, aynı akıştan yeni tarla kaydı, geri dönüşte veri korunması.
+- [x] Bugünkü işler sayfasında sıradaki/devam eden iş kartı ve ara/konum/iş aç aksiyonları.
+- [x] Build/typecheck ve 70 test.
+- [ ] Gerçek işletme tarifesi/ekip kurulumu ve saha pilotu.
+
+## Sıradaki aşama — Müşteri hesabı ve tahsilat
+Plan: CUSTOMER_ACCOUNT_PLAN.md (18 Ekim 2026). Kullanıcı planı kaydetti; uygulamaya henüz başlanmadı. İlk adım mevcut finans modeli, API ve testlerinin incelenmesi. Detaylı kapsam ve tamamlanmamış adımlar bu dosyada.
+
+## Müşteri hesabı / tahsilat — 18 Ekim 2026
+- [x] Tam/kısmi ödeme, ödeme yöntemi, tarih ve veresiye/vade.
+- [x] Müşteri hesap kartı, alacaklar, tahsilatlar ve mevcut gider ekranı.
+- [x] Toplu ödeme, en eski açık işe varsayılan dağıtım, düzenlenebilir önizleme, atomik kayıt.
+- [x] Gerekçeli/sürümlü düzeltme, audit ve idempotency/eşzamanlı ödeme sınırı.
+- [x] 78 test; PostgreSQL E2E; 22 tablo/RLS ve SQL tekrar çalıştırma kontrolü.
+- [ ] Gerçek işletme pilotu; fazla ödeme/iade/tedarikçi borcu ikinci aşama.
+Google Maps aktarımı yalnız GOOGLE_MAPS_ROUTE_PLAN.md dosyasında planlandı. Bu turda dış Maps bağlantısı uygulanmadı.
+
+## 18 Ekim — Google Maps durak aktarımı uygulandı
+- [x] Günlük sırayı koruyan mobil uyumlu bölümler (4 hedef), önizleme, paylaşım onayı ve yeni sekmede açma.
+- [x] İsteğe bağlı merkeze dönüş ve tek durak yedek bağlantıları.
+- [x] Kişisel veri taşımayan, kodlanmış koordinat URL'leri ve yanlış koordinatta hata.
+- [x] Build/typecheck ve 85 test.
+- [ ] Gerçek telefonda/masaüstünde Google Maps duraklarının kullanıcıyla teyidi; gerçek tarla konumları test için gönderilmedi.
+Ayrıntı: GOOGLE_MAPS_ROUTE_PLAN.md. Bu aşamada randevu/iş durumu veya veritabanı değiştirilmez.
+
+18 Ekim randevu alacağı kontrolü: build/typecheck, 86 birim/SSR testi ve izole PostgreSQL uçtan uca akışı geçti. Yeni kontroller: talepte alacak, iptalde düşüm ve audit, programa dönüşümde çift saymama, program iptali. Supabase şemasında değişiklik yok. Canlı tarayıcı görsel kontrolü yapılmadı.

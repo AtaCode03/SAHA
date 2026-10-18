@@ -1,4 +1,5 @@
 import {priceForField} from './pricing.js';
+import {rankNearby} from './proximity.js';
 import {loadRoadMatrices} from './road-planning.js';
 import {Router} from 'express';
 import {z} from 'zod';
@@ -49,6 +50,7 @@ planningRouter.get('/orders/:id/weather',async(req,res)=>{
  res.json({appointment,plannedStart:order.plannedStart,plannedEnd:order.plannedEnd,forecast:latest?{id:latest.id,retrievedAt:latest.retrievedAt,provider:latest.provider,hours:payload.hours,usageMode:latest.usageMode,stale:Date.now()-latest.retrievedAt.getTime()>3600000}:null,changed:!!latest&&(order.snapshot as any)?.planning?.weatherForecastId!==latest.id,suitability});
 });
 planningRouter.use(admin);
+planningRouter.get('/nearby',async(req,res)=>{const day=daySchema.parse(req.query.day);const rows=await db.appointmentRequest.findMany({where:{status:'PENDING',earliestDay:{lte:day},latestDay:{gte:day},field:{active:true,customer:{active:true}}},include:{field:{include:{customer:{select:{name:true,phone:true}}}}},orderBy:{id:'asc'},take:101});if(rows.length>100)throw new AppError(422,'DAY_LIMIT','Bir günde en çok 100 talep sıralanabilir.');res.json({day,...rankNearby(rows)});});
 planningRouter.get('/resources',async(_req,res)=>res.json({users:await db.user.findMany({where:{active:true},select:{id:true,name:true,role:true}}),drones:await db.drone.findMany({where:{active:true}})}));
 planningRouter.get('/profiles',async(_req,res)=>res.json({data:await db.planningProfile.findMany({include:{operator:{select:{name:true}},drone:true},orderBy:{createdAt:'asc'}})}));
 async function validateProfile(tx:Prisma.TransactionClient,input:z.infer<typeof profileInput>){const op=await tx.user.findUnique({where:{id:input.operatorId}}),drone=await tx.drone.findUnique({where:{id:input.droneId}});if(!op?.active||!drone?.active)throw new AppError(422,'RESOURCE_INACTIVE','Aktif kişi ve drone seçin.');}

@@ -1,3 +1,4 @@
+import {apiErrorMessage} from './form-errors';
 export let csrf = "";
 export function setCsrf(value: string) {
   csrf = value;
@@ -39,7 +40,7 @@ export async function api<T = any>(
   }
   if (!response.ok) {
     const data = await response.json().catch(() => null);
-    throw Error(data?.error?.message ?? "İşlem kaydedilemedi.");
+    throw Object.assign(Error(apiErrorMessage(data?.error)),{status:response.status,code:data?.error?.code});
   }
   if (response.status === 204) return undefined as T;
   return response.json();

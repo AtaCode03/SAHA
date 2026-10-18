@@ -1,3 +1,5 @@
+> Güncel karar · 18 Ekim 2026: Randevu kaydedildiği anda kararlaştırılmış tutar Kasa → Alacaklar ve müşteri hesabına dahil edilir. Bekleyen talep iptal gerekçesiyle iptal edilince alacak düşer. Programa alınan talep bağlı iş üzerinden yalnız bir kez sayılır; iş iptali alacağı kaldırır. Erteleme alacağı kaldırmaz. Tahsilat yalnız iş tamamlandıktan sonra açılır. Ödemeli iş iptali engellenir; ödeme silinmez, gerekçeli düzeltme gerekir. Eski bağımsız iş emirleri tamamlanınca alacak oluşturur. Bu karar aşağıdaki önceki “yalnız tamamlanan işler” kuralının yerini alır. Yeni tablo/migration gerekmez; mevcut randevu ve iş kayıtları esas alınır.
+
 # Planlama çalışma durumu — 16 Ekim 2026
 
 ## 17 Ekim2026 — Depo/giriş ve otomatik yol planı bağlandı
@@ -66,3 +68,42 @@ Gerçek servis ve saha pilotu sonuçları uydurulmaz. Açık soruya kullanıcı 
 Birim fiyatlar sekmesi eklendi; dekar/litre/kg/sabit kalem ve maliyet üzerine kâr yüzdesi ile randevu ve yeni iş emrinde otomatik fiyat. Kimyasal seçimi/doz önerisi yok. Yeni migration: 20261018010000_pricing (price_items, appointment_requests.pricingSnapshot); geçmiş işin finans snapshot'ı korunur. 64 birim testi, build/typecheck, 21 tablo/RLS/tekrar çalıştırma SQL testi ve PostgreSQL uçtan uca senaryoları geçti. Fiyat testleri rol sınırı, alan hesabı, Decimal, eski tarife reddi, snapshot korunması ve operatör finans gizliliğini içerir. Gerçek tarife girilmedi; işletme kendi maliyetlerini ekleyecek. Ayrıntılar README ve DATA_SPEC içinde.
 
 Sade saha arayüzü tamamlandı (17 Ekim 2026): SADE_KULLANIM.md günlük kullanım rehberidir. Operatör hava tablosu yerine iş/hizmet/saat/konum ve kayıt aksiyonlarını görür. Yönetici teknik araçlara isteğe bağlı ulaşır. Günlük iş listesi yazdır/PDF destekler; istemci gerçek saha verisi olmadan sentetik SSR senaryosuyla doğrulandı. 65 test ve build geçti. Önceki pilot/kurulum eksikleri devam ediyor.
+
+## 17 Ekim — Form uyarısı düzeltmesi
+Tarla düzenlerken roadAccess gibi sunucuya ait ek kayıt alanlarının strict doğrulamaya geri gönderilmesi engellendi; yalnız düzenlenebilir alanlar gönderilir. Genel “Alanları kontrol edin” yerine sunucunun alan bazlı hata ayrıntıları Türkçe alan adlarıyla gösterilir. 68 test ve build/typecheck geçti. Kullanıcı belirttiği DOM seçicisi form hata kutusunu gösteriyordu; gerçek form değerleri paylaşılmadığından o istekteki hatalı alan kesinleştirilemedi. Yerel düzeltme hazır.
+
+## 17 Ekim — Parselden otomatik dekar
+Tarla kaydında parsel sınırı varsa alan geometri üzerinden 0,001 dekar hassasiyetinde hesaplanır ve kaydedilir (EXTERNAL). Liste API'si eski sınırı olan kayıtlarda da hesaplayarak döndürür. İş emri formunda planlanan alan ve alan kaynağı elle giriş kontrolleri kaldırıldı. Fiyat hesabı aynı geometriyi kullanır. Sınır yoksa mevcut manuel geçmiş değer korunur; yeni otomatik alan üretilmez. Tarihsel iş snapshot'ları değişmez.
+
+## 17 Ekim — Yerleşim yenilendi
+Ana menü 5 temel bölüme indirildi. Müşteriler/tarlalar sekmeli ortak alanda, tarife/ekip/depo/drone ayarlarda. Randevular listeyle açılır; 3 adımlı AppointmentWizard müşteri+tarla/harita → gün+saat → fiyat+kaydet akışını kullanır. Yeni tarla ekleme aynı akış içinden açılır. NextJob kartı devam eden işe öncelik verir, ardından en erken planlanan işi gösterir; müşteri arama/konum/iş açma işlemleri sunar. İşe açma otomatik hazırlık kaydı değildir. Build/typecheck ve 70 test geçti. Gerçek işletme tarife/ekip ve saha pilotu eksikleri devam ediyor.
+
+## 17 Ekim — Basit ilaç tarifesi ve otomatik fiyat
+PriceMenu yeni kalemde CHEMICAL/DEKAR hazır gelir, isim ve TL/dekar bedeli öndedir. Tür/farklı birim gelişmiş bölümde. Randevu ve iş emri PriceCalculator'da tek ilaç/hizmet seçimi alan × bedeli otomatik sunucudan getirir. Ek kâr varsayılan %0, ayrıntıdan değişebilir; çoklu kalem/litre/kg eski hesaplayıcıyla erişilebilir. Seçim/alan değişirken eski toplam anında geçersizleştirilir; geç dönen yanıtlar kullanılmaz. Gerçek tarife uydurulmadı. 70 test geçti. Önceki fiyat snapshot/Decimal/sunucu doğrulama sözleşmesi korunur.
+
+## Tek kişi ekranları (17 Ekim)
+Kullanıcı isteğiyle ekip ayar sekmesi ve çoklu ekip kontrolleri kaldırıldı. Günlük rota ilk aktif profile otomatik bağlanır; aynı profil tek kişi çalışma bilgileri altında güncellenir, geçmiş profiller silinmez. Depo seçimi otomatik, yeni doğrudan işte crewSize=1. Eski sunucu sözleşmesi ve tarihsel kayıtlar korunur. 70 test geçti; build/typecheck kontrol edildi.
+
+18 Ekim 2026: başlangıç kullanıcı kararıyla yaklaşık Seydişehir merkez (37.419,31.849). Depo seçimi kaldırıldı. server/planning-start.ts tek başlangıç sabiti; roadInputs profildeki eski baseLocation yerine bunu kullanır ve matris giriş hash/snapshot'ına alır. Eski matrisler yeni başlangıçla uyuşmazsa yeniden alınır; eski onaylı rota snapshot'ları korunur. Canlı GPS yok. 70 birim testi geçti; yeni başlangıç matrisi kontrolü PostgreSQL E2E kapsamına eklendi.
+
+18 Ekim: Randevu talebi ile kesinleşmiş iş ayrımı belirginleştirildi. Talep kaydından sonra günlük program hazırlama bağlantısı ve açıklama gösterilir. Bekleyen kartta Program bekliyor etiketi ve Günlük programa al düğmesi vardır. Bugünkü işler yalnız iş emri oluşmuş, tarihi bugün olan kayıtları listeler; talep kaydı otomatik plan onayı değildir.
+
+18 Ekim — Günlük rota ilk kullanım engeli: çalışma profili olmadığında randevu seçimleri kilitleniyor ancak form ayarlarda gizli kalıyordu. Rota ekranına eksikse açık ilk kullanım formu eklendi. Seçili talepte araç girişi eksikse doğrudan o tarlanın giriş ekranını açan düğme ve rotaya dönüş eklendi. Herhangi bir gerçek çalışma süresi veya teyitli giriş uydurulmadı. İlk kurulumun işletmeci tarafından tamamlanması gerekiyor. 70 test geçti.
+
+18 Ekim — Kullanıcı kararıyla günlük rota ilk ekranı artık yakınlık listesidir. /planning/nearby yönetici endpoint'i günün PENDING taleplerini merkeze kuş uçuşu artan sıralar. Giriş/profil/yol API'si gerektirmez. Eski saatli program isteğe bağlı korunur. Saat/iş emri onayı otomatik yapılmaz. Eksik geometri dışlanır, hata gösterilir. 72 birim testi ve build/typecheck geçti; PostgreSQL endpoint rol/gerçek veri kontrolü eklendi.
+
+Doğrulama: yakınlık endpoint'i PostgreSQL uçtan uca testinde veri döndürdü; operatör erişimi 403, yalnız yönetici listeleyebilir. Tarla giriş teyidi/çalışma profili olmadan yakınlık sırası üretildi. Eski saatli program testleri de geçti.
+
+## 18 Ekim — Sonraki çalışma: müşteri hesabı ve tahsilat
+Kullanıcı yalnız planın kaydedilmesini istedi; uygulama başlatılmadı. Güncel plan CUSTOMER_ACCOUNT_PLAN.md dosyasında. Sonraki devam talimatında bu planın 1. adımı olan mevcut finans modeli/API/test incelemesinden başlanacak. Öncelik iş sonu tam/kısmi ödeme/veresiye, müşteri bakiyesi ve alacak listesi; sonra toplu ödeme dağıtımı. Fazla ödeme, iade ve tedarikçi borcu ikinci aşamada. Mevcut yerel değişiklikler korunacak; veritabanı resetlenmeyecek.
+
+## 18 Ekim 2026 — Müşteri hesabı ilk aşama tamamlandı
+Güncel finans uygulaması server/accounts.ts, src/Accounts.tsx, migration 20261018030000_customer_accounts. Müşteri hesabı, Kasa alacak/tahsilat/gider sekmeleri, iş sonu tam/kısmi/veresiye, toplu ödeme dağıtımı, sürümlü gerekçeli düzeltme ve audit eklendi. Yalnız COMPLETED işler alacak oluşturur; mevcut kayıtlar silinmedi. Yeni migration Supabase saha şemasına uygulandı. 78 test; PostgreSQL finans+eski akış E2E, 22 tablo/RLS/SQL tekrar çalıştırma geçti. Gerçek işletme pilotu bekliyor; kaynak veriye sahte ödeme eklenmedi.
+Google Maps'e durak aktarımı kullanıcının isteğiyle yalnız planlandı: GOOGLE_MAPS_ROUTE_PLAN.md. Mobil limitler ve URL uzunluğu nedeniyle numaralı parça önerisi, dış konum aktarımında kullanıcı tıklaması ve veri minimizasyonu belgeli. Harici Maps'e gerçek veri gönderilmedi. Sonraki geliştirme talebinde bu plan veya finans ikinci aşama kapsamı kullanıcı isteğine göre ele alınacak.
+
+Son doğrulama notu: canlı tarayıcıdaki mevcut sekme erişimi tarayıcı URL güvenlik politikasıyla engellendi; alternatif yüzeyle aşılmaya çalışılmadı. Bu turda görsel canlı QA yapılmadı. UI durumları render testleriyle, finans yazımları izole PostgreSQL/API senaryolarıyla doğrulandı. Gerçek müşteri hesabına deneme tahsilatı eklenmedi. Uygulama localhost:5173 üzerinde Supabase ile başlatıldı. Build istemci paketi 500 kB uyarısı veriyor; derleme başarılı, kod bölme ayrı iyileştirme.
+
+## 18 Ekim — Google Maps planı uygulandı
+src/google-maps-routes.ts saf URL/parça oluşturucu; src/GoogleMapsStops.tsx günlük sıra entegrasyonu. 4 hedef/bağlantı, bölüm zinciri, opsiyonel dönüş, tek tek yol tarifi yedeği. Varsayılan onaysız bağlantılar href taşımaz; Google SDK/iframe veya sayfa açılışında Google isteği yoktur. URL yalnız koordinatlar ve sabit yön parametrelerini taşır. Mevcut yönetici API sınırı değişmedi. Tüm 85 test, typecheck/build geçti. Gerçek telefonda/masaüstünde Google Maps ara durak kabulü doğrulanmadı; gerçek müşteri konumları dış servise gönderilmedi. Mevcut günlük sıra saatli program onayı değildir; bu işleyiş korunur. Veritabanı migration gerekmedi. Sonraki kontrol: kullanıcıyla cihaz üzerinde aktarım teyidi. Önceki belgelerdeki yalnız plan ifadesi bu notla güncellendi.
+
+18 Ekim randevu alacağı kontrolü: build/typecheck, 86 birim/SSR testi ve izole PostgreSQL uçtan uca akışı geçti. Yeni kontroller: talepte alacak, iptalde düşüm ve audit, programa dönüşümde çift saymama, program iptali. Supabase şemasında değişiklik yok. Canlı tarayıcı görsel kontrolü yapılmadı.

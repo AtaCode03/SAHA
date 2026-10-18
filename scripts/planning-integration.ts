@@ -10,11 +10,14 @@ export async function planningIntegration(db:PrismaClient,adminAgent:any,opAgent
  const price=await write(adminAgent,adminCsrf,'/pricing/items',priceBody);assert.equal(price.status,201,JSON.stringify(price.body));
  const pricing={markupPercent:'20',lines:[{itemId:price.body.id,version:1}]};
  const calculated=await write(adminAgent,adminCsrf,'/pricing/calculate',{fieldId:f.id,pricing});assert.equal(calculated.status,200,JSON.stringify(calculated.body));
+ const fieldList=await adminAgent.get('/api/fields?pageSize=100');assert.equal(fieldList.status,200);assert.equal(fieldList.body.data.find((x:any)=>x.id===f.id).area,calculated.body.dekar);
+ const autoField=await write(adminAgent,adminCsrf,'/fields',{customerId:c.id,name:'SENTETİK OTOMATİK ALAN',province:'Konya',district:'Seydişehir',neighborhood:'TEST',area:'999',boundary:f.boundary});assert.equal(autoField.status,201,JSON.stringify(autoField.body));assert.equal(autoField.body.area,calculated.body.dekar);
  const pricedBody={fieldId:f.id,service:'TEST PRICE',requestedDay:'2026-11-20',earliestDay:'2026-11-20',latestDay:'2026-11-20',windows:[{start:'09:00',end:'17:00'}],scope:'FULL_PARCEL',agreedPrice:calculated.body.total,pricing};
  assert.equal((await write(adminAgent,adminCsrf,'/planning/appointments',{...pricedBody,agreedPrice:'0'})).status,409);
  const pricedRequest=await write(adminAgent,adminCsrf,'/planning/appointments',pricedBody);assert.equal(pricedRequest.status,201,JSON.stringify(pricedRequest.body));assert.equal(pricedRequest.body.pricingSnapshot.total,calculated.body.total);
  const pricedOrder=await write(adminAgent,adminCsrf,'/orders',{fieldId:f.id,operatorId,service:'TEST PRICE',plannedArea:'1',agreedPrice:calculated.body.total,pricing});assert.equal(pricedOrder.status,201,JSON.stringify(pricedOrder.body));assert.equal(pricedOrder.body.plannedArea,calculated.body.dekar);assert.equal(pricedOrder.body.snapshot.pricing.total,calculated.body.total);
  const operatorPrice=await opAgent.get('/api/orders/'+pricedOrder.body.id);assert.equal(operatorPrice.status,200);assert.equal(operatorPrice.body.snapshot.pricing,undefined);assert.equal(operatorPrice.body.agreedPrice,undefined);
+ const nearby=await adminAgent.get('/api/planning/nearby?day=2026-11-20');assert.equal(nearby.status,200,JSON.stringify(nearby.body));assert.equal(nearby.body.distanceType,'STRAIGHT_LINE');assert.ok(nearby.body.rows.some((x:any)=>x.id===pricedRequest.body.id));assert.equal((await opAgent.get('/api/planning/nearby?day=2026-11-20')).status,403);
  const updatedPrice=await adminAgent.put('/api/pricing/items/'+price.body.id).set('Origin',process.env.APP_ORIGIN!).set('x-csrf-token',adminCsrf).send({...priceBody,unitCost:'99',version:1});assert.equal(updatedPrice.status,200,JSON.stringify(updatedPrice.body));
  assert.equal((await write(adminAgent,adminCsrf,'/pricing/calculate',{fieldId:f.id,pricing})).status,409);
  assert.equal((await db.appointmentRequest.findUniqueOrThrow({where:{id:pricedRequest.body.id}})).agreedPrice.toFixed(2),calculated.body.total);
@@ -52,3 +55,5 @@ export async function planningIntegration(db:PrismaClient,adminAgent:any,opAgent
  await roadPlanningIntegration(db,adminAgent,opAgent,otherAgent,write,adminCsrf,opCsrf,f.id,p.body.id,body);
  console.log('Planlama E2E geçti: esnek randevu, tek kişi/yönetici atama, otomatik alan/süre, snapshot değişimi, atomik/eşzamanlı onay, operatör hava görünümü ve finans gizliliği.');
 }
+
+

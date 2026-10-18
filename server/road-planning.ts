@@ -1,4 +1,5 @@
 import {Router} from 'express';
+import {planningStart} from './planning-start.js';
 import {z} from 'zod';
 import {Prisma} from '@prisma/client';
 import {createHash} from 'node:crypto';
@@ -21,8 +22,8 @@ export function assertRoadMatches(payload:any){
 }
 type Client=Prisma.TransactionClient;
 export async function roadInputs(tx:Client,profileId:string,requestIds:string[]){
- const p=await tx.planningProfile.findUniqueOrThrow({where:{id:profileId}}),base=access.safeParse(p.baseLocation);
- if(!p.active||!base.success)throw new AppError(422,'BASE_NOT_CONFIRMED','Ekip için depo/başlangıç noktası haritada teyit edilmeli.');
+ const p=await tx.planningProfile.findUniqueOrThrow({where:{id:profileId}}),base={data:planningStart};
+ if(!p.active)throw new AppError(422,'PROFILE_INACTIVE','Çalışma kaydı aktif olmalı.');
  const requests=await tx.appointmentRequest.findMany({where:{id:{in:requestIds}},include:{field:true},orderBy:{id:'asc'}});
  if(requests.length!==requestIds.length||requests.some(r=>r.status!=='PENDING'||!r.field.active))throw new AppError(422,'ROAD_REQUEST','Yalnız aktif tarladaki bekleyen talepler kullanılabilir.');
  const points=[{id:'BASE',longitude:base.data.longitude,latitude:base.data.latitude,accessConfirmed:true as const}],sources:any[]=[];

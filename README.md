@@ -1,3 +1,5 @@
+> Güncel karar · 18 Ekim 2026: Randevu kaydedildiği anda kararlaştırılmış tutar Kasa → Alacaklar ve müşteri hesabına dahil edilir. Bekleyen talep iptal gerekçesiyle iptal edilince alacak düşer. Programa alınan talep bağlı iş üzerinden yalnız bir kez sayılır; iş iptali alacağı kaldırır. Erteleme alacağı kaldırmaz. Tahsilat yalnız iş tamamlandıktan sonra açılır. Ödemeli iş iptali engellenir; ödeme silinmez, gerekçeli düzeltme gerekir. Eski bağımsız iş emirleri tamamlanınca alacak oluşturur. Bu karar aşağıdaki önceki “yalnız tamamlanan işler” kuralının yerini alır. Yeni tablo/migration gerekmez; mevcut randevu ve iş kayıtları esas alınır.
+
 # SAHA — Seydişehir tarımsal drone işletme paneli
 
 Türkçe, mobil uyumlu tek işletme uygulaması. Express/TypeScript REST API, PostgreSQL/Prisma, React/Vite/Tailwind ve Leaflet. Ekranlar sabit demo metrikleri yerine veritabanını okur. Otomatik drone, ödeme, muhasebe, resmî parsel veya hava entegrasyonu yapılandırılmamıştır. İlaç/teşhis/doz önerisi verilmez.
@@ -128,3 +130,16 @@ Supabase saha.price_items tarifeyi; appointment_requests.pricingSnapshot ve work
 
 ## Sade kullanım
 Günlük akış ve sadeleştirilen ekranlar: [SADE_KULLANIM.md](SADE_KULLANIM.md). Günlük rota sonucunda Yazdır / PDF kaydet ile iş listesi alınabilir. Teknik hava/araştırma araçları yönetici için Gelişmiş araçlar altında; ekip/depo ayarları Randevu ve rota → İlk kurulum / ayarlar altında.
+
+## Müşteri hesabı ve tahsilat (18 Ekim 2026)
+- Müşteriler ve tarlalar → Müşteriler → Hesap / ödeme al: tamamlanan hizmetler, bu işlere ödenen tutar, kalan borç ve hesap hareketleri.
+- Tamamlanan işte İş sonu ödeme: Tamamı ödendi, Kısmi ödeme al veya Veresiye / vade. İşin tamamlanması ödeme yapılmasına bağlı değildir; operatör finans göremez.
+- Kasa → Alacaklar / Tahsilatlar / Giderler. Alacak vadesi varsa gecikme gösterilir; tahsilatlarda tarih ve müşteri filtresi vardır.
+- Müşteri ödeme formu tutarı önce en eski açık tamamlanmış işlere dağıtır. Dağılım kaydetmeden önce görülür ve düzenlenebilir. Toplam uyuşmazlığı, başka müşteri/planlanan işe dağıtım ve fazla ödeme reddedilir.
+- Ödeme yöntemleri: nakit, havale/EFT, diğer. Eski kayıtlar LEGACY/yöntem belirtilmemiş olarak korunur. Düzeltme gerekçeli ve sürüm kontrollüdür; 0 TL'ye düzeltme kaydı geçersizleştirir, silmez. Toplu tahsilatın ortak tarih/yöntem/not değişiklikleri dağıtım satırlarına birlikte uygulanır.
+- Tahakkuk kuralı: yalnız COMPLETED işler alacak oluşturur. REQUESTED/PLANNED/RUNNING/POSTPONED/CANCELLED işler yeni alacak hesabına katılmaz. Bu, eski rapordaki planlanan bedellerin de alacağa eklenmesinden farklıdır; geçmiş bedel/ödeme kayıtları değiştirilmedi. Tamamlanmamış işlerdeki eski ödemeler müşteri kartında ayrıca belirtilir.
+- Yeni migration: 20261018030000_customer_accounts. Mevcut kurulumda `npm run db:generate` ve `npm run db:migrate`; Supabase SQL paketi `npm run supabase:sql`. Reset veya seed gerekmez.
+- Finans planı: CUSTOMER_ACCOUNT_PLAN.md. Google Maps'e durak aktarımı yalnız GOOGLE_MAPS_ROUTE_PLAN.md içinde planlı; henüz uygulanmadı.
+
+## Google Maps'te duraklı güzergâh (18 Ekim 2026)
+Randevular → Günlük rota: Google Maps güzergâhı bölümünde durakları kontrol edin. Konum paylaşma onayını işaretleyip Google Maps'te aç bağlantısına basın. En çok 4 hedef tek bağlantı; uzun listeler sırayı koruyan bölümlerdir. Sonraki bölüm öncekinin son noktasından başlar. İsterseniz merkeze dönüşü ekleyin. Cihaz ara durakları desteklemiyorsa Tek tek tarlaya git bağlantılarını kullanın. Başlangıç Seydişehir merkezdir; canlı konum izni istenmez. Müşteri adı/telefon/not/bedel URL'ye eklenmez. Yol ve süre Google Maps'te hesaplanır, uygulamaya geri alınmaz. Parsel temsil noktası araç giriş garantisi değildir. Kullanım Google Maps üzerinde ayrıca telefon/masaüstü teyidi gerektirir; geliştirme testleri dış servise gerçek müşteri verisi göndermeden yapıldı.

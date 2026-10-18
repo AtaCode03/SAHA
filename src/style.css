@@ -696,3 +696,48 @@ a {
  .daily-run-sheet { color: black; background: white; }
  .daily-run-sheet a { color: black; text-decoration: none; }
 }
+
+/* The page follows a single task instead of showing every form at once. */
+.appointment-wizard { max-width: 880px; margin: 0 auto 28px; }
+.wizard-steps { display:grid;grid-template-columns:repeat(3,1fr);list-style:none;padding:0;gap:12px;margin:24px 0 30px; }
+.wizard-steps li { display:flex;align-items:center;gap:10px;color:#70847a;padding-bottom:12px;border-bottom:3px solid #e4eae5;font-size:.92rem; }
+.wizard-steps li span { display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#edf1ed;flex-shrink:0; }
+.wizard-steps li.current { color:#174e40;font-weight:700;border-color:#174e40; }
+.wizard-steps li.current span { background:#174e40;color:white; }
+.wizard-page { display:grid;gap:20px; }
+.wizard-page > .panel { margin:0;padding:0;border:0;box-shadow:none; }
+.wizard-page .selected-field { border:1px solid #dce5df;border-radius:14px;padding:18px; }
+.wizard-footer { display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:30px;padding-top:20px;border-top:1px solid #dce5df; }
+.wizard-footer > div { display:flex;gap:10px; }
+.section-tabs { margin-bottom:20px;flex-wrap:wrap; }
+.next-job { border:2px solid #174e40;margin-bottom:24px; }
+.next-job h2 { font-size:1.7rem;margin:14px 0 8px; }
+.next-job-time { font-size:1.15rem;font-weight:600; }
+.next-job-actions { display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0 0; }
+.next-job-actions > * { min-height:50px;display:flex;align-items:center;justify-content:center; }
+@media(max-width:640px){
+ .wizard-steps { gap:6px; }.wizard-steps li { font-size:.75rem;flex-direction:column;align-items:flex-start;gap:6px; }
+ .appointment-wizard { padding:18px; }.wizard-footer { flex-wrap:wrap; }.wizard-footer > button { width:100%; }
+ .next-job-actions { grid-template-columns:1fr; }.next-job h2 { font-size:1.4rem; }
+}
+.wizard-page .map { height:260px;min-height:220px; }
+.simple-price { display:grid;gap:18px; }
+.automatic-price { background:#edf4ee;border:1px solid #cadfce;border-radius:14px;padding:24px;display:grid;gap:10px; }
+.automatic-price p { margin:0;color:#536b5e; }
+.automatic-price > strong { font-size:2rem;color:#174e40;line-height:1.2; }
+.simple-price > details { border-top:1px solid #dce5df;padding-top:16px; }
+.simple-price > details > summary { cursor:pointer;min-height:44px; }
+.settlement { display:grid; gap:16px; margin:16px 0; }
+.settlement .actions { flex-wrap:wrap; }
+.settlement > .panel { margin:0; }
+.settlement summary { cursor:pointer;min-height:44px;display:flex;align-items:center; }
+.settlement .form-grid { margin-top:14px; }
+.google-maps-stops { margin-bottom:24px; }
+.maps-part { border-top:1px solid #dce5df;padding:18px 0; }
+.maps-part ol { padding-left:24px;margin:14px 0; }
+.maps-part li { padding:5px 0; }
+.maps-link { display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 18px;border-radius:8px;background:#174e40;color:#fff;text-decoration:none;font-weight:600;margin:6px 10px 6px 0; }
+.maps-link.secondary { background:#f4f7f3;color:#174e40;border:1px solid #dce5df; }
+.maps-link.disabled { opacity:.45;cursor:not-allowed; }
+.google-maps-stops summary { cursor:pointer;min-height:44px;display:flex;align-items:center; }
+@media(max-width:640px){.maps-link{display:flex;width:100%;margin:10px 0;}}

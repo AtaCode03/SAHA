@@ -1,3 +1,4 @@
+import {accountsRouter} from './accounts.js';
 import {pricingInput} from './pricing-domain.js';
 import {priceForField} from './pricing.js';
 import {pricingRouter} from './pricing.js';
@@ -72,6 +73,7 @@ app.use('/api/roads',roadRouter);
 app.use('/api/road-planning',roadPlanningRouter);
 app.use('/api/planning',planningRouter);
 app.use('/api/pricing',pricingRouter);
+app.use('/api/finance',accountsRouter);
 app.get("/api/auth/me", (req, res) =>
   res.json({ user: req.actor, csrf: req.session!.csrf }),
 );
@@ -235,13 +237,14 @@ app.get("/api/fields", admin, async (req, res) => {
     }),
     db.field.count({ where }),
   ]);
-  res.json({ data, total, ...p });
+  res.json({ data:data.map(f=>({...f,...(f.boundary?{area:new Prisma.Decimal(shapeFeatures(f.boundary).boundaryAreaDekar!).toFixed(3),areaOrigin:'EXTERNAL'}:{})})), total, ...p });
 });
 async function fieldData(input: z.infer<typeof fieldInput>) {
   const c = await db.customer.findUnique({ where: { id: input.customerId } });
   if (!c?.active) fail("INACTIVE_CUSTOMER", "Aktif müşteri seçin.");
   return {
     ...input,
+    ...(input.boundary?{area:new Prisma.Decimal(shapeFeatures(input.boundary).boundaryAreaDekar!).toFixed(3),areaOrigin:'EXTERNAL' as const}:{}),
     source: c!.source,
     boundary: input.boundary ?? Prisma.JsonNull,
   };
@@ -414,6 +417,8 @@ function presentOrder(order: any, role: string) {
     payments,
     expenses,
     balance: remaining,
+    dueDay,
+    creditNote,
     snapshot,
     ...safe
   } = o;
@@ -607,6 +612,10 @@ app.post("/api/orders/:id/status", admin, async (req, res) => {
       const key = id.parse(req.params.id),
         o = await tx.workOrder.findUniqueOrThrow({ where: { id: key } });
       assertTransition(o.status, input.status);
+      if(input.status==='CANCELLED'){
+        const paid=await tx.payment.aggregate({where:{orderId:key},_sum:{amount:true}});
+        if(new Decimal(paid._sum.amount?.toString()??'0').gt(0))fail('PAYMENT_EXISTS','Ödemesi bulunan iş iptal edilemez. Önce ödeme kayıtlarını inceleyip gerekçeli düzeltme yapın.');
+      }
       if(input.status==='PLANNED')await assertAppointmentSchedule(tx,o,{plannedStart:o.plannedStart?.toISOString(),plannedEnd:o.plannedEnd?.toISOString(),operatorId:o.operatorId,droneId:o.droneId});
       if (["RUNNING", "COMPLETED"].includes(input.status))
         fail(
@@ -859,6 +868,7 @@ app.post("/api/orders/:id/payments", admin, async (req, res) => {
         o.adjustment.toString(),
         o.payments.map((p) => p.amount.toString()),
       );
+      if(o.status!=='COMPLETED')fail('NOT_ACCRUED','Tahsilat için iş tamamlanmış olmalı.');
       if (new Decimal(input.amount).gt(remaining))
         fail("OVERPAYMENT", "Tahsilat kalan bakiyeyi aşamaz.");
       const p = await tx.payment.create({
@@ -982,13 +992,14 @@ app.get("/api/reports", admin, async (req, res) => {
       gte: range.from ? new Date(range.from) : undefined,
       lt: range.to ? new Date(range.to) : undefined,
     };
-  const [orders, payments, expenses] = await Promise.all([
+  const [orders, payments, expenses, pendingAppointments] = await Promise.all([
     db.workOrder.findMany({
       where: { requestedAt: at },
-      include: orderInclude,
+      include: {...orderInclude,appointment:true},
     }),
     db.payment.findMany({ where: { at } }),
     db.expense.findMany({ where: { at } }),
+    db.appointmentRequest.findMany({where:{status:"PENDING",orderId:null,createdAt:at}}),
   ]);
   const sum = (vals: string[]) =>
     vals.reduce((s, v) => s.plus(v), new Decimal(0)).toFixed(2);
@@ -1014,15 +1025,15 @@ app.get("/api/reports", admin, async (req, res) => {
         .map((o) => o.plannedArea.toString()),
     ),
     collected: sum(payments.map((p) => p.amount.toString())),
-    outstanding: sum(
-      orders.map((o) =>
+    outstanding: new Decimal(sum(pendingAppointments.map(a=>a.agreedPrice.toString()))).plus(sum(
+      orders.filter(o=>o.status==='COMPLETED'||(o.appointment&&o.status!=='CANCELLED')).map((o) =>
         balance(
           o.agreedPrice.toString(),
           o.adjustment.toString(),
           o.payments.map((p) => p.amount.toString()),
         ),
       ),
-    ),
+    )).toFixed(2),
     expenseTotal: sum(expenses.map((e) => e.amount.toString())),
     expenses,
     operations: orders

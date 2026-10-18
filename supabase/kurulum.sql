@@ -337,7 +337,7 @@ ALTER TABLE "payments" ADD CONSTRAINT "payments_positive" CHECK ("amount" > 0);
 ALTER TABLE "expenses" ADD CONSTRAINT "expenses_positive" CHECK ("amount" > 0);
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('41817099-bcdd-4efc-9532-15912acc8bfb','faa78fe9cfc33bbcd83414c355eca5515f1ae44b88fd2385377008a5dbe280c7','20261014120000_initial',now(),1);
+ VALUES ('59eeaf39-8c1f-400a-b5d7-26df86f1bd0e','faa78fe9cfc33bbcd83414c355eca5515f1ae44b88fd2385377008a5dbe280c7','20261014120000_initial',now(),1);
  END IF;
 END $saha_migration$;
 
@@ -352,7 +352,7 @@ ALTER TABLE "work_orders" ADD COLUMN "actualArea" DECIMAL(12,3), ADD COLUMN "act
 ALTER TABLE "work_orders" ADD CONSTRAINT "orders_actual_area_positive" CHECK ("actualArea" IS NULL OR "actualArea" > 0);
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('557dd69b-88d7-444b-8817-edac67fcbf73','c49060d2b9cba4d256ca2c6e7cd6f36ae160a1ec5a4c5c91047b1f4718db9746','20261014150000_actual_area',now(),1);
+ VALUES ('14cb8aa9-d98c-4cad-8853-2613376cf821','c49060d2b9cba4d256ca2c6e7cd6f36ae160a1ec5a4c5c91047b1f4718db9746','20261014150000_actual_area',now(),1);
  END IF;
 END $saha_migration$;
 
@@ -367,7 +367,7 @@ ALTER TABLE "fields" ALTER COLUMN "area" DROP NOT NULL, ALTER COLUMN "areaOrigin
 
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('fcd418bb-2309-4d20-92a4-02415159d9c0','b5d4050166d57ce5d241c685dbd3e0c5e652bb1fa8096c4624f04875ed782c48','20261015102000_optional_field_area',now(),1);
+ VALUES ('1a9c2e44-49de-4096-aa83-7bfb25ec965a','b5d4050166d57ce5d241c685dbd3e0c5e652bb1fa8096c4624f04875ed782c48','20261015102000_optional_field_area',now(),1);
  END IF;
 END $saha_migration$;
 
@@ -381,7 +381,7 @@ BEGIN
 ALTER TABLE "fields" ALTER COLUMN "crop" DROP NOT NULL;
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('8b27e887-985a-4608-931f-b467cfbedd31','13d3228449a471161ccedf8c346c0d6c21547670a7e5b50943b24fed1fd69d0c','20261015103000_optional_field_crop',now(),1);
+ VALUES ('a04380d4-6106-4a33-8938-0cb17ed40938','13d3228449a471161ccedf8c346c0d6c21547670a7e5b50943b24fed1fd69d0c','20261015103000_optional_field_crop',now(),1);
  END IF;
 END $saha_migration$;
 
@@ -401,7 +401,7 @@ REVOKE ALL ON "weather_forecasts" FROM PUBLIC;
 DO $acl$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP IF EXISTS(SELECT FROM pg_roles WHERE rolname=r) THEN EXECUTE format('REVOKE ALL ON "weather_forecasts" FROM %I',r); END IF; END LOOP; END $acl$;
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('69577a2b-2eff-4d57-9b53-e751bc9177a8','7e302ba4b6c65043be38193e77219d45bebc5fa482b43c32d5fe220f8448ef3b','20261016183000_weather_forecasts',now(),1);
+ VALUES ('b843e92b-08df-4c11-96e2-92ff41f5d1a9','7e302ba4b6c65043be38193e77219d45bebc5fa482b43c32d5fe220f8448ef3b','20261016183000_weather_forecasts',now(),1);
  END IF;
 END $saha_migration$;
 
@@ -429,7 +429,7 @@ REVOKE ALL ON "planning_profiles","appointment_requests","daily_plans" FROM PUBL
 DO $acl$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP IF EXISTS(SELECT FROM pg_roles WHERE rolname=r) THEN EXECUTE format('REVOKE ALL ON "planning_profiles","appointment_requests","daily_plans" FROM %I',r); END IF; END LOOP; END $acl$;
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('5a04f248-65ae-4574-9d7d-9c330f77143e','0095d34e7c9b11d313195bb4ffd2394e24af022f3222488a6724b3d80ab59c82','20261016210000_appointments_planning',now(),1);
+ VALUES ('8bbea346-f937-4bfb-9a25-f25314e4f6e1','0095d34e7c9b11d313195bb4ffd2394e24af022f3222488a6724b3d80ab59c82','20261016210000_appointments_planning',now(),1);
  END IF;
 END $saha_migration$;
 
@@ -456,7 +456,7 @@ REVOKE ALL ON "travel_matrices","travel_routes" FROM PUBLIC;
 DO $acl$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP IF EXISTS(SELECT FROM pg_roles WHERE rolname=r) THEN EXECUTE format('REVOKE ALL ON "travel_matrices","travel_routes" FROM %I',r); END IF; END LOOP; END $acl$;
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('b8313363-adc4-4113-8b21-60805e9194b2','2b3b717dad789312fe0d2a0e5980853b271a8951ffe9f362c066e03e3317ac9d','20261017230000_road_access_matrices',now(),1);
+ VALUES ('b412c9d8-7ac3-4c25-909a-af027cfd8ad8','2b3b717dad789312fe0d2a0e5980853b271a8951ffe9f362c066e03e3317ac9d','20261017230000_road_access_matrices',now(),1);
  END IF;
 END $saha_migration$;
 
@@ -475,7 +475,29 @@ REVOKE ALL ON "price_items" FROM PUBLIC;
 DO $acl$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP IF EXISTS(SELECT FROM pg_roles WHERE rolname=r) THEN EXECUTE format('REVOKE ALL ON "price_items" FROM %I',r); END IF; END LOOP; END $acl$;
 
  INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
- VALUES ('27c7ed42-53b1-42b7-857d-442248803cad','9522061edff149985014b9c11b080408d12cbe9b80f25cfe28119bcb45ed8a25','20261018010000_pricing',now(),1);
+ VALUES ('bef5945a-41e7-42bc-b486-f9584f28848b','9522061edff149985014b9c11b080408d12cbe9b80f25cfe28119bcb45ed8a25','20261018010000_pricing',now(),1);
+ END IF;
+END $saha_migration$;
+
+-- Migration: 20261018030000_customer_accounts
+DO $saha_migration$
+BEGIN
+ IF EXISTS(SELECT 1 FROM "saha"."_prisma_migrations" WHERE migration_name='20261018030000_customer_accounts' AND rolled_back_at IS NULL AND finished_at IS NOT NULL AND checksum<>'e2360d39f19931655ef66eede0e939d9f66491fe4b46a4c744b4faae3c39eadb') THEN
+  RAISE EXCEPTION 'Migration checksum farkli: 20261018030000_customer_accounts. Mevcut veri korundu.';
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM "saha"."_prisma_migrations" WHERE migration_name='20261018030000_customer_accounts' AND rolled_back_at IS NULL AND finished_at IS NOT NULL AND checksum='e2360d39f19931655ef66eede0e939d9f66491fe4b46a4c744b4faae3c39eadb') THEN
+ALTER TABLE "work_orders" ADD COLUMN "dueDay" TEXT, ADD COLUMN "creditNote" TEXT;
+CREATE TABLE "customer_receipts" ("id" TEXT PRIMARY KEY,"customerId" TEXT NOT NULL REFERENCES "customers"("id") ON DELETE RESTRICT ON UPDATE CASCADE,"amount" NUMERIC(14,2) NOT NULL CHECK ("amount">=0),"method" TEXT NOT NULL,"at" TIMESTAMPTZ(3) NOT NULL,"note" TEXT,"idempotencyKey" TEXT NOT NULL UNIQUE,"requestHash" TEXT NOT NULL,"version" INTEGER NOT NULL DEFAULT 1);
+CREATE INDEX "customer_receipts_customerId_at_idx" ON "customer_receipts"("customerId","at");
+ALTER TABLE "payments" ADD COLUMN "method" TEXT NOT NULL DEFAULT 'LEGACY', ADD COLUMN "version" INTEGER NOT NULL DEFAULT 1, ADD COLUMN "receiptId" TEXT REFERENCES "customer_receipts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+CREATE INDEX "payments_receiptId_idx" ON "payments"("receiptId");
+CREATE INDEX "work_orders_customerId_status_completedAt_idx" ON "work_orders"("customerId","status","completedAt");
+ALTER TABLE "customer_receipts" ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON "customer_receipts" FROM PUBLIC;
+DO $acl$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP IF EXISTS(SELECT FROM pg_roles WHERE rolname=r) THEN EXECUTE format('REVOKE ALL ON "customer_receipts" FROM %I',r); END IF; END LOOP; END $acl$;
+
+ INSERT INTO "saha"."_prisma_migrations" (id,checksum,migration_name,finished_at,applied_steps_count)
+ VALUES ('e45004e3-6b80-4db2-af0f-c4fa4bd99f5e','e2360d39f19931655ef66eede0e939d9f66491fe4b46a4c744b4faae3c39eadb','20261018030000_customer_accounts',now(),1);
  END IF;
 END $saha_migration$;
 
