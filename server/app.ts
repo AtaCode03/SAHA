@@ -41,7 +41,9 @@ import {
   researchColumns,
 } from "./domain.js";
 export const app = express();
+if(process.env.VERCEL==='1')app.set('trust proxy',1);
 app.disable("x-powered-by");
+app.use('/api',(_req,res,next)=>{res.set('Cache-Control','private, no-store');next();});
 app.use(
   helmet({
     contentSecurityPolicy: {

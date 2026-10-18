@@ -8,3 +8,4 @@ coverage/
 research/private/
 *.log
 .local/
+.vercel/

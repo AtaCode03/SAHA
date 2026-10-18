@@ -143,3 +143,7 @@ Günlük akış ve sadeleştirilen ekranlar: [SADE_KULLANIM.md](SADE_KULLANIM.md
 
 ## Google Maps'te duraklı güzergâh (18 Ekim 2026)
 Randevular → Günlük rota: Google Maps güzergâhı bölümünde durakları kontrol edin. Konum paylaşma onayını işaretleyip Google Maps'te aç bağlantısına basın. En çok 4 hedef tek bağlantı; uzun listeler sırayı koruyan bölümlerdir. Sonraki bölüm öncekinin son noktasından başlar. İsterseniz merkeze dönüşü ekleyin. Cihaz ara durakları desteklemiyorsa Tek tek tarlaya git bağlantılarını kullanın. Başlangıç Seydişehir merkezdir; canlı konum izni istenmez. Müşteri adı/telefon/not/bedel URL'ye eklenmez. Yol ve süre Google Maps'te hesaplanır, uygulamaya geri alınmaz. Parsel temsil noktası araç giriş garantisi değildir. Kullanım Google Maps üzerinde ayrıca telefon/masaüstü teyidi gerektirir; geliştirme testleri dış servise gerçek müşteri verisi göndermeden yapıldı.
+
+## Vercel yayını
+
+Arayüz ve Express API aynı adreste, veriler mevcut Supabase veritabanında çalışacak şekilde yapılandırılmıştır. Panel ayarları, ortam değişkenleri, servis sınırları ve kontrol adımları için [VERCEL_YAYIN.md](./VERCEL_YAYIN.md) dosyasını izleyin. Gerçek Vercel dağıtımı yapılmadan yayın doğrulanmış sayılmaz.

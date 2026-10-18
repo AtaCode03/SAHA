@@ -1,0 +1,11 @@
+.env
+.env.*
+.local/
+.git/
+.codex/
+.agents/
+research/private/
+coverage/
+*.log
+dist/
+dist-server/

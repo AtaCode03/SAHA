@@ -232,3 +232,6 @@ Bugünkü randevular doğrulaması: build/typecheck ve 87 birim/SSR testi geçti
 18 Ekim — Bölgesel tanıtım vurgusu kaldırıldı: giriş metni ve tarayıcı başlığı genel SAHA marka diline çevrildi; rota düğmeleri başlangıç noktası olarak adlandırıldı. Gerçek adresler, demo katalog ve mevcut rota başlangıcının yaklaşık konum açıklaması doğruluk için korundu.
 
 18 Ekim — Kullanıcı adıyla giriş eklendi; mevcut e-posta girişleri korunur. Yeni yönetici hesabının parolası bcrypt 12 ile özetlenir; düz parola yalnız Git dışı .local dizininde teslim edilir.
+
+18 Ekim — Vercel uyarlaması: tek Express function giriş dosyası, CDN arayüz/API yönlendirmesi, idari JSON ve Prisma paketleme, Prisma generate build adımı, HTTPS origin/uzak DB doğrulaması, API no-store, gizli dosyaları hariç tutma ve VERCEL_YAYIN.md hazırlandı. Gerçek panel deploy ve HTTPS giriş testi kullanıcı projesine erişim/domain seçimine bağlı bekliyor.
+Vercel doğrulaması: npm run vercel:build (Prisma generate + typecheck + Vite + sunucu derlemesi), 90 birim/SSR/giriş dosyası testi ve izole PostgreSQL E2E geçti. Gerçek Vercel paketleme/dağıtım testi panelde ilk deploy sonrası bekliyor. İşletme veritabanı resetlenmedi; yerel uygulama yeniden başlatılır.

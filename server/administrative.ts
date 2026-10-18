@@ -1,7 +1,8 @@
 import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
 import {z} from 'zod';
 const row=z.object({id:z.number().int(),name:z.string(),provinceId:z.number().int().optional(),districtId:z.number().int().optional()});
-function load(name:string){return z.array(row).parse(JSON.parse(readFileSync(new URL('../data/administrative/'+name+'.json',import.meta.url),'utf8')));}
+function load(name:string){return z.array(row).parse(JSON.parse(readFileSync(resolve('data/administrative',name+'.json'),'utf8')));}
 const provinces=load('provinces'),districts=load('districts'),neighborhoods=load('neighborhoods'),villages=load('villages');
 const options=(rows:typeof provinces,prefix:string)=>rows.map(v=>({id:prefix+v.id,name:v.name})).sort((a,b)=>a.name.localeCompare(b.name,'tr'));
 export const catalogProvinces=()=>options(provinces,'tr-province-');

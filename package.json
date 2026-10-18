@@ -25,7 +25,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "user:create": "tsx scripts/create-user.ts",
     "test:integration": "tsx scripts/integration.ts",
-    "test:postgres": "tsx scripts/test-postgres.ts"
+    "test:postgres": "tsx scripts/test-postgres.ts",
+    "vercel:build": "prisma generate && npm run build"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
